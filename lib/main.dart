@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:goldfish/core/logging/app_logger.dart';
 import 'package:goldfish/core/theme/app_theme.dart';
 import 'package:goldfish/features/home/presentation/screens/home_screen.dart';
 
 void main() {
+  AppLogger.logAppInitialization();
   runApp(const MyApp());
 }
 
