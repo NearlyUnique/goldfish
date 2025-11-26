@@ -1,4 +1,4 @@
-package com.example.goldfish
+package dev.goldfish.app
 
 import io.flutter.embedding.android.FlutterActivity
 
