@@ -1,27 +1,42 @@
-.PHONY: build em_deploy em_run em_launch install clean help
-
-.DEFAULT_GOAL := help
-
 # Configuration
 EMULATOR_NAME := goldfish_emulator
 APK_PATH := build/app/outputs/flutter-apk/app-release.apk
 PACKAGE_NAME := dev.goldfish.app
 MAIN_ACTIVITY := $(PACKAGE_NAME)/.MainActivity
+COVERAGE_PATH := coverage/lcov.info
+
+# Source directories and files
+LIB_DIR := lib
+TEST_DIR := test
+PUBSPEC := pubspec.yaml
+ANDROID_DIR := android
+
+# Test files
+TEST_FILES := $(shell find $(TEST_DIR) -name '*.dart' 2>/dev/null)
+BOOTSTRAP_TEST := test/bootstrap_test.dart
+
+# Source files (for dependency tracking)
+SOURCE_FILES := $(shell find $(LIB_DIR) -name '*.dart' 2>/dev/null)
+
+# Phony targets (always execute, don't produce files)
+.PHONY: help clean em_launch em_run test_watch
+
+.DEFAULT_GOAL := help
 
 help: ## Show this help message
 	@echo "Available targets:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-build: ## Build release APK
+# Build target - only rebuilds if sources changed or APK doesn't exist
+$(APK_PATH): $(PUBSPEC) $(SOURCE_FILES) $(ANDROID_DIR)
 	@echo "Building release APK..."
-	flutter build apk --release
+	@flutter build apk --release
 	@echo "APK built at: $(APK_PATH)"
 
-em_launch: ## Launch the emulator
-	@echo "Launching emulator: $(EMULATOR_NAME)"
-	flutter emulators --launch $(EMULATOR_NAME)
+build: $(APK_PATH) ## Build release APK
 
-install: build ## Install APK on connected device/emulator
+# Install depends on APK file
+install: $(APK_PATH) ## Install APK on connected device/emulator
 	@echo "Installing APK..."
 	@if adb devices | grep -q "device$$"; then \
 		adb install -r $(APK_PATH); \
@@ -31,7 +46,8 @@ install: build ## Install APK on connected device/emulator
 		exit 1; \
 	fi
 
-em_deploy: build ## Build and deploy APK to emulator
+# Deploy depends on APK file
+em_deploy: $(APK_PATH) ## Build and deploy APK to emulator
 	@echo "Deploying to emulator..."
 	@if adb devices | grep -q "device$$"; then \
 		adb install -r $(APK_PATH); \
@@ -43,12 +59,39 @@ em_deploy: build ## Build and deploy APK to emulator
 		exit 1; \
 	fi
 
+em_launch: ## Launch the emulator
+	@echo "Launching emulator: $(EMULATOR_NAME)"
+	@flutter emulators --launch $(EMULATOR_NAME)
+
 em_run: ## Run app on emulator (builds and installs automatically)
 	@echo "Running app on emulator..."
-	flutter run
+	@flutter run
 
 clean: ## Clean build artifacts
 	@echo "Cleaning build artifacts..."
-	flutter clean
+	@flutter clean
+	@rm -f $(COVERAGE_PATH)
 	@echo "Clean complete"
 
+# Test targets - depend on test files and source files
+test: $(TEST_FILES) $(SOURCE_FILES) ## Run all tests
+	@echo "Running all tests..."
+	@flutter test
+	@echo "Tests completed"
+
+test_bootstrap: $(BOOTSTRAP_TEST) $(SOURCE_FILES) ## Run bootstrap test only
+	@echo "Running bootstrap test..."
+	@flutter test $(BOOTSTRAP_TEST)
+	@echo "Bootstrap test completed"
+
+test_watch: ## Run tests in watch mode
+	@echo "Running tests in watch mode (press 'q' to quit)..."
+	@flutter test --watch
+
+# Coverage depends on test files and produces coverage file
+$(COVERAGE_PATH): $(TEST_FILES) $(SOURCE_FILES)
+	@echo "Running tests with coverage..."
+	@flutter test --coverage
+	@echo "Coverage report generated at: $(COVERAGE_PATH)"
+
+test_coverage: $(COVERAGE_PATH) ## Run tests with coverage report
