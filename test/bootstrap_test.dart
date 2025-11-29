@@ -10,7 +10,6 @@ import 'package:goldfish/core/logging/app_logger.dart';
 void main() {
   test('App bootstrap test', () {
     // Log test start
-    print('App test started');
     AppLogger.info({
       'event': 'test_started',
       'test_name': 'App bootstrap test',
@@ -20,7 +19,6 @@ void main() {
     assert(true, 'Test framework should work correctly');
 
     // Log test completion
-    print('App test completed');
     AppLogger.info({
       'event': 'test_completed',
       'test_name': 'App bootstrap test',
