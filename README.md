@@ -452,6 +452,48 @@ flutter build appbundle --release
 flutter build apk --release --flavor production
 ```
 
+### Security Auditing
+
+The project includes security audit tools to check for vulnerabilities and outdated dependencies:
+
+**Prerequisites**:
+- **OSV Scanner**: Install with `go install github.com/google/osv-scanner/cmd/osv-scanner@latest`
+  - Ensure `~/go/bin` is in your PATH
+- **dep_audit**: Install with `dart pub global activate dep_audit`
+  - Ensure `~/.pub-cache/bin` is in your PATH
+
+**Setup**:
+```bash
+# Check if tools are installed and PATH is configured
+bash scripts/check_audit_tools.sh
+
+# Add both tools to PATH (if not already added)
+echo 'export PATH="$PATH:$HOME/go/bin:$HOME/.pub-cache/bin"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**Running Audits**:
+```bash
+# Run all security audits
+make audit
+
+# Run OSV Scanner only (checks for known vulnerabilities)
+make audit-osv
+
+# Run dep_audit only (checks for outdated/unused packages)
+make audit-dep
+
+# Or run manually:
+osv-scanner --lockfile pubspec.lock
+dep_audit --path .
+```
+
+**What Each Tool Does**:
+- **OSV Scanner**: Scans `pubspec.lock` against Google's OSV database for known security vulnerabilities
+- **dep_audit**: Analyzes dependencies for outdated packages, unused packages, and package health issues
+
+**Note**: The `flutter` package may show as "discontinued" in dep_audit - this is a false positive since `flutter` is an SDK package, not a pub.dev package.
+
 ## Documentation
 
 - **Project Overview**: See `prompts/00_outline.md`

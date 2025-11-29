@@ -19,7 +19,7 @@ BOOTSTRAP_TEST := test/bootstrap_test.dart
 SOURCE_FILES := $(shell find $(LIB_DIR) -name '*.dart' 2>/dev/null)
 
 # Phony targets (always execute, don't produce files)
-.PHONY: help clean em_launch em_run test_watch
+.PHONY: help clean em_launch em_run test_watch audit audit-osv audit-dep
 
 .DEFAULT_GOAL := help
 
@@ -95,3 +95,26 @@ $(COVERAGE_PATH): $(TEST_FILES) $(SOURCE_FILES)
 	@echo "Coverage report generated at: $(COVERAGE_PATH)"
 
 test_coverage: $(COVERAGE_PATH) ## Run tests with coverage report
+
+# Security audit targets
+audit: audit-osv audit-dep ## Run all security audits (OSV Scanner + dep_audit)
+
+audit-osv: $(PUBSPEC) ## Run OSV Scanner security audit
+	@echo "Running OSV Scanner security audit..."
+	@if command -v osv-scanner >/dev/null 2>&1; then \
+		osv-scanner --lockfile pubspec.lock; \
+	else \
+		echo "Error: osv-scanner not found. Install with: go install github.com/google/osv-scanner/cmd/osv-scanner@latest"; \
+		echo "Make sure ~/go/bin is in your PATH"; \
+		exit 1; \
+	fi
+
+audit-dep: $(PUBSPEC) ## Run dep_audit dependency audit
+	@echo "Running dep_audit dependency audit..."
+	@if command -v dep_audit >/dev/null 2>&1; then \
+		dep_audit --path .; \
+	else \
+		echo "Error: dep_audit not found. Install with: dart pub global activate dep_audit"; \
+		echo "Make sure ~/.pub-cache/bin is in your PATH"; \
+		exit 1; \
+	fi

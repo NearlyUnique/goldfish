@@ -102,6 +102,30 @@ check_adb_devices() {
   fi
 }
 
+check_optional_command() {
+  local cmd="$1"
+  local help_ref="$2"
+  if command -v "$cmd" >/dev/null 2>&1; then
+    local location
+    location="$(command -v "$cmd")"
+    pass "$cmd available at $location."
+  else
+    note "$cmd is not installed (optional). See $help_ref for setup instructions."
+  fi
+}
+
+check_security_audit_tools() {
+  heading "Security audit tools (optional)"
+  check_optional_command "osv-scanner" "$HELP_README -> Security Auditing"
+  check_optional_command "dep_audit" "$HELP_README -> Security Auditing"
+
+  # Check if PATH includes the directories where these tools are typically installed
+  if [[ ":$PATH:" != *":$HOME/go/bin:"* ]] && [[ ":$PATH:" != *":$HOME/.pub-cache/bin:"* ]]; then
+    note "Consider adding ~/go/bin and ~/.pub-cache/bin to PATH for security audit tools."
+    note "Run: bash scripts/check_audit_tools.sh for detailed setup instructions."
+  fi
+}
+
 ensure_repo_root
 
 heading "CLI availability"
@@ -116,6 +140,7 @@ check_env_path "ANDROID_HOME" "$HELP_README -> Android Development Tools"
 
 run_flutter_doctor
 check_adb_devices
+check_security_audit_tools
 
 heading "Next steps"
 printf 'For build, test, and APK verification guidance see %s.\n' "$HELP_BOOTSTRAP"
