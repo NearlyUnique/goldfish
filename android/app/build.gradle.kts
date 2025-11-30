@@ -10,7 +10,7 @@ dependencies {
 }
 android {
     namespace = "dev.goldfish.app"
-    compileSdk = 34
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

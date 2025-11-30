@@ -5,6 +5,10 @@ PACKAGE_NAME := dev.goldfish.app
 MAIN_ACTIVITY := $(PACKAGE_NAME)/.MainActivity
 COVERAGE_PATH := coverage/lcov.info
 
+# Android SDK paths (auto-detect from Flutter or use default)
+ANDROID_SDK := $(shell flutter doctor -v 2>/dev/null | grep "Android SDK at" | sed 's/.*Android SDK at \(.*\)/\1/' | head -1)
+ADB := $(if $(ANDROID_SDK),$(ANDROID_SDK)/platform-tools/adb,adb)
+
 # Source directories and files
 LIB_DIR := lib
 TEST_DIR := test
@@ -38,8 +42,8 @@ build: $(APK_PATH) ## Build release APK
 # Install depends on APK file
 install: $(APK_PATH) ## Install APK on connected device/emulator
 	@echo "Installing APK..."
-	@if adb devices | grep -q "device$$"; then \
-		adb install -r $(APK_PATH); \
+	@if $(ADB) devices | grep -q "device$$"; then \
+		$(ADB) install -r $(APK_PATH); \
 		echo "APK installed successfully"; \
 	else \
 		echo "Error: No device/emulator connected. Run 'make em_launch' first."; \
@@ -49,10 +53,10 @@ install: $(APK_PATH) ## Install APK on connected device/emulator
 # Deploy depends on APK file
 em_deploy: $(APK_PATH) ## Build and deploy APK to emulator
 	@echo "Deploying to emulator..."
-	@if adb devices | grep -q "device$$"; then \
-		adb install -r $(APK_PATH); \
+	@if $(ADB) devices | grep -q "device$$"; then \
+		$(ADB) install -r $(APK_PATH); \
 		echo "APK deployed to emulator"; \
-		adb shell am start -n $(MAIN_ACTIVITY); \
+		$(ADB) shell am start -n $(MAIN_ACTIVITY); \
 		echo "App launched"; \
 	else \
 		echo "Error: No emulator connected. Run 'make em_launch' first."; \
