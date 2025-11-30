@@ -20,12 +20,24 @@ jobs:
             - name: Set up Flutter
               uses: subosito/flutter-action@v2
               with:
-                  flutter-version: "3.27.0"
+                  flutter-version: "3.38.3"
                   channel: "stable"
                   cache: true
 
             - name: Verify Flutter installation
               run: flutter doctor -v
+
+            - name: Verify project setup
+              run: |
+                  # Verify pubspec.yaml exists
+                  if [[ ! -f pubspec.yaml ]]; then
+                    echo "Error: pubspec.yaml not found"
+                    exit 1
+                  fi
+                  # Verify Flutter version matches requirements
+                  flutter --version
+                  # Verify Dart version meets pubspec.yaml requirements
+                  dart --version
 
             - name: Get dependencies
               run: flutter pub get
