@@ -1,0 +1,72 @@
+name: CI
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+
+jobs:
+    test-lint-audit-build:
+        name: Test, Lint, Audit, and Build
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Flutter
+              uses: subosito/flutter-action@v2
+              with:
+                  flutter-version: "3.24.0"
+                  channel: "stable"
+                  cache: true
+
+            - name: Verify Flutter installation
+              run: flutter doctor -v
+
+            - name: Get dependencies
+              run: flutter pub get
+
+            - name: Set up Go for audit tools
+              uses: actions/setup-go@v5
+              with:
+                  go-version: "1.21"
+
+            - name: Run lint
+              run: make lint
+
+            - name: Run tests
+              run: make test
+
+            - name: Install audit tools
+              run: |
+                  # Install osv-scanner
+                  if ! command -v osv-scanner &> /dev/null; then
+                    echo "Installing osv-scanner..."
+                    go install github.com/google/osv-scanner/cmd/osv-scanner@latest
+                    echo "$HOME/go/bin" >> $GITHUB_PATH
+                  fi
+                  # Install dep_audit
+                  if ! command -v dep_audit &> /dev/null; then
+                    echo "Installing dep_audit..."
+                    dart pub global activate dep_audit
+                    echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+                  fi
+              continue-on-error: true
+
+            - name: Run security audits
+              run: make audit
+              continue-on-error: true
+
+            - name: Build APK
+              run: make build
+
+            # - name: Upload APK artifact
+            #   uses: actions/upload-artifact@v4
+            #   with:
+            #       name: app-release-apk
+            #       path: build/app/outputs/flutter-apk/app-release.apk
+            #       retention-days: 30

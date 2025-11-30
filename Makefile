@@ -19,7 +19,7 @@ BOOTSTRAP_TEST := test/bootstrap_test.dart
 SOURCE_FILES := $(shell find $(LIB_DIR) -name '*.dart' 2>/dev/null)
 
 # Phony targets (always execute, don't produce files)
-.PHONY: help clean em_launch em_run test_watch audit audit-osv audit-dep
+.PHONY: help clean em_launch em_run test_watch lint audit audit-osv audit-dep
 
 .DEFAULT_GOAL := help
 
@@ -87,6 +87,11 @@ test_bootstrap: $(BOOTSTRAP_TEST) $(SOURCE_FILES) ## Run bootstrap test only
 test_watch: ## Run tests in watch mode
 	@echo "Running tests in watch mode (press 'q' to quit)..."
 	@flutter test --watch
+
+lint: $(SOURCE_FILES) ## Run lint/analyze on code
+	@echo "Running lint/analyze..."
+	@flutter analyze
+	@echo "Lint completed"
 
 # Coverage depends on test files and produces coverage file
 $(COVERAGE_PATH): $(TEST_FILES) $(SOURCE_FILES)
