@@ -214,6 +214,56 @@ Only consider a third-party mocking package when:
 
 ---
 
+### Exception: HTTP Testing with MockClient
+
+**For HTTP testing, use `MockClient` from the `http` package's testing library** instead of creating custom fakes for `http.Client`.
+
+The `http` package provides `MockClient` specifically designed for testing HTTP clients. It's a drop-in replacement for `http.Client` that allows you to set up request handlers to fake server responses.
+
+#### Example: Using MockClient
+
+```dart
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+
+test('successfully sends POST request', () async {
+  // Arrange
+  final capturedCalls = <Map<String, dynamic>>[];
+  final mockClient = MockClient((request) async {
+    capturedCalls.add({
+      'url': request.url,
+      'headers': request.headers,
+      'body': request.body,
+    });
+    return http.Response('{"success": true}', 200);
+  });
+  
+  final httpPackageClient = HttpPackageClient(client: mockClient);
+
+  // Act
+  final result = await httpPackageClient.post(
+    Uri.parse('https://example.com/api'),
+    headers: {'Content-Type': 'application/json'},
+    body: '{"key": "value"}',
+  );
+
+  // Assert
+  expect(result.statusCode, equals(200));
+  expect(capturedCalls, hasLength(1));
+});
+```
+
+#### Why MockClient Instead of Custom Fakes?
+
+- **Standard library support**: `MockClient` is part of the official `http` package, maintained and tested by the Dart team.
+- **No boilerplate**: No need to implement all `http.Client` methods manually.
+- **Request-based API**: The handler receives a `Request` object with all request details, making it easy to inspect and respond.
+- **Simpler tests**: Each test creates a `MockClient` with a handler function, keeping test code concise and readable.
+
+**Do not create custom fakes for `http.Client`** - always use `MockClient` from `package:http/testing.dart`.
+
+---
+
 ### Guidelines for New Fakes
 
 When adding a new fake in this repo:
