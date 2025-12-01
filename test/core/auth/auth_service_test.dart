@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:goldfish/core/auth/auth_exceptions.dart';
 import 'package:goldfish/core/auth/auth_service.dart';
+import 'package:goldfish/core/auth/models/user_model.dart';
 import 'package:goldfish/core/auth/repositories/user_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -21,7 +22,20 @@ class MockUserCredential extends Mock implements firebase_auth.UserCredential {}
 
 class MockUser extends Mock implements firebase_auth.User {}
 
+class FakeAuthCredential extends Fake implements firebase_auth.AuthCredential {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(FakeAuthCredential());
+    registerFallbackValue(
+      UserModel(
+        uid: 'test_uid',
+        email: 'test@example.com',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+    );
+  });
   group('AuthService', () {
     late MockFirebaseAuth mockFirebaseAuth;
     late MockGoogleSignIn mockGoogleSignIn;

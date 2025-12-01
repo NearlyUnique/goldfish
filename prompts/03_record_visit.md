@@ -124,16 +124,28 @@ flutter pub add geolocator http
 
 **Model Structure**:
 ```dart
+class GeoLatLong {
+  final double Lat;
+  final double Long;
+}
+class LocationType {
+    string Type;
+    string SubType;
+}
+class Address {
+    string? NameNumber;
+    string? Street;
+    string? City;
+    string? Postcode;
+}
 class Visit {
   final String? id; // Firestore document ID (null for new visits)
   final String userId; // Logged-in user's UID
   final String placeName; // Required
-  final String? placeAddress;
-  final double recordedGpsLatitude; // User's GPS when recording
-  final double recordedGpsLongitude;
-  final double? placeGpsLatitude; // From Overpass
-  final double? placeGpsLongitude; // From Overpass
-  final String? amenityType; // From Overpass tags
+  final Address? placeAddress;
+  final GeoLatLong? gpsRecorded; // User's GPS when recording
+  final GeoLatLong? gpsKnown; // From Overpass
+  final LocationType? placeType; // From Overpass tags, e.g. amenity : pub
   final DateTime addedAt; // Date/time visit was added
   final DateTime createdAt;
   final DateTime updatedAt;

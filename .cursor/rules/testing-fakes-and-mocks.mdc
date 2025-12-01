@@ -1,0 +1,231 @@
+---
+alwaysApply: true
+---
+## Testing: Function-Field Fakes and Mocks (Funky/moq Style)
+
+### Overview
+
+This document defines how to write lightweight, explicit fakes/mocks in Dart that follow the same spirit as:
+
+- [`funky` C# source generator](https://github.com/nearlyunique/funky) – generates mock types with `OnXxx` function fields.
+- Mat Ryer’s Go `moq` pattern – generated structs with function fields you fill in per test.
+
+Instead of a heavy mocking framework or codegen, **we hand-write small fake types** that:
+
+- Implement a production interface/abstract class.
+- Expose **function fields** (`OnXxx`) that tests assign to control behavior.
+- Provide simple default behavior (no-op or throw) so unexpected calls are obvious.
+
+The goal: **tests remain readable, explicit, and debuggable**, with minimal indirection.
+
+---
+
+### Design Principles
+
+- **No mocking framework required**: Use plain Dart classes and closures.
+- **Per-test behavior**: Each test configures only the behavior it cares about via function fields.
+- **Fast feedback**: Unexpected method calls either:
+  - Return a safe default (stub-style), or
+  - Throw `UnimplementedError` (strict-style) to fail fast.
+- **Call visibility**: Tests can capture arguments and call counts in local collections when needed.
+- **Interface-first**: Always mock via an abstract type (interface) from the production code.
+
+---
+
+### Pattern: Function-Field Fake
+
+#### 1. Production interface (or abstract class)
+
+Example (auth-relevant style, simplified):
+
+```dart
+abstract class UserRepository {
+  Future<User?> findById(String id);
+  Future<void> save(User user);
+}
+```
+
+#### 2. Fake implementation with function fields
+
+We define a concrete fake that:
+
+- Implements the interface.
+- Exposes public function fields (e.g. `onFindById`) that delegate to the interface methods.
+- Provides default implementations.
+
+```dart
+/// Default/stub-style fake: safe defaults, does not throw by default.
+class FakeUserRepository implements UserRepository {
+  FakeUserRepository({
+    Future<User?> Function(String id)? onFindById,
+    Future<void> Function(User user)? onSave,
+  })  : onFindById = onFindById ?? _defaultFindById,
+        onSave = onSave ?? _defaultSave;
+
+  Future<User?> Function(String id) onFindById;
+  Future<void> Function(User user) onSave;
+
+  @override
+  Future<User?> findById(String id) => onFindById(id);
+
+  @override
+  Future<void> save(User user) => onSave(user);
+
+  static Future<User?> _defaultFindById(String id) async => null;
+  static Future<void> _defaultSave(User user) async {}
+}
+```
+
+Conventions:
+
+- **Name**: `Fake<InterfaceName>` or `Test<InterfaceName>`.
+- **Handler fields**: `onMethodName`, mirroring the interface method.
+- **Defaults**:
+  - `Future<void>` → empty async function.
+  - `Future<T?>` → `null` or very simple value.
+  - Synchronous `T` → simple constant or `null` if nullable.
+
+Typedefs (e.g. `typedef FindByIdFn = Future<User?> Function(String id);`) are **optional**:
+
+- Use them when they **improve readability** or are reused in multiple places (e.g. helpers, extensions).
+- Avoid introducing typedefs everywhere if they **add noise/clutter** without real benefit.
+
+#### 3. Strict variant (optional)
+
+For tests that should fail if a method is not explicitly configured, use a strict fake:
+
+```dart
+class StrictFakeUserRepository implements UserRepository {
+  Future<User?> Function(String id)? onFindById;
+  Future<void> Function(User user)? onSave;
+
+  @override
+  Future<User?> findById(String id) =>
+      onFindById != null
+          ? onFindById!(id)
+          : throw UnimplementedError('findById not configured in test');
+
+  @override
+  Future<void> save(User user) =>
+      onSave != null
+          ? onSave!(user)
+          : throw UnimplementedError('save not configured in test');
+}
+```
+
+Use this when:
+
+- You want fast feedback on unexpected calls.
+- The test should configure **all** interactions explicitly.
+
+---
+
+### Using Fakes in Tests
+
+#### Simple behavior
+
+```dart
+test('returns error when user not found', () async {
+  final repo = FakeUserRepository(
+    onFindById: (id) async => null,
+  );
+
+  final service = UserService(repo);
+  final result = await service.loadUser('123');
+
+  expect(result.isError, true);
+});
+```
+
+#### Capturing calls and arguments
+
+```dart
+test('captures calls to save', () async {
+  final savedUsers = <User>[];
+
+  final repo = FakeUserRepository(
+    onSave: (user) async {
+      savedUsers.add(user);
+    },
+  );
+
+  final service = UserService(repo);
+  final user = User(id: 'u1', email: 'test@example.com');
+
+  await service.updateUser(user);
+
+  expect(savedUsers, hasLength(1));
+  expect(savedUsers.single.id, 'u1');
+});
+```
+
+#### Reusable helpers (Funky-style static methods)
+
+Like Funky’s `MockClient.ReturnInStockItem`, we can attach helpers to the fake:
+
+```dart
+extension FakeUserRepositoryPresets on FakeUserRepository {
+  static Future<User?> alwaysFound(String id) async =>
+      User(id: id, email: 'test@example.com');
+}
+
+test('uses helper preset', () async {
+  final repo = FakeUserRepository(
+    onFindById: FakeUserRepositoryPresets.alwaysFound,
+  );
+
+  final service = UserService(repo);
+  final result = await service.loadUser('abc');
+
+  expect(result.user, isNotNull);
+});
+```
+
+---
+
+### Where to Put Fakes
+
+- **Per core abstraction**:
+  - For each key interface or abstract class (e.g. `UserRepository`, `AuthService`, `VisitRepository`), add a corresponding fake in `test/`:
+    - `test/core/auth/user_repository_fake.dart`
+    - `test/core/auth/auth_service_fake.dart`
+    - `test/core/data/visit_repository_fake.dart`
+- **Not in production code**:
+  - Fakes live in the test tree only.
+  - They can depend on production model types (`User`, `Visit`, etc.).
+
+When a fake is broadly reused and stable, prefer a single shared implementation over per-test ad-hoc closures.
+
+---
+
+### When to Prefer Function-Field Fakes Over Mocking Frameworks
+
+Use this pattern when:
+
+- You want **readable tests** that look like regular Dart code (no DSL).
+- You want to easily set breakpoints in fake logic.
+- You care about explicit wiring of behavior per test.
+- You want to avoid reflective/codegen-heavy mocking frameworks.
+
+Only consider a third-party mocking package when:
+
+- You have a large number of interfaces that change frequently.
+- The boilerplate for hand-written fakes becomes a maintenance burden.
+
+---
+
+### Guidelines for New Fakes
+
+When adding a new fake in this repo:
+
+- **Mirror the interface**:
+  - All public methods must be represented as handler typedefs and fields.
+- **Choose default style**:
+  - Default-stub (safe defaults) for simple dependencies.
+  - Strict (throws `UnimplementedError`) for critical-flow dependencies.
+- **Keep fakes dumb**:
+  - Avoid hidden logic in fakes; keep behavior in tests or small helpers.
+- **Prefer composition**:
+  - If a fake needs to coordinate multiple collaborators, compose multiple fakes instead of building one giant fake.
+
+This approach should be the *default* for new tests in this project unless a specific use case clearly benefits from a traditional mocking framework.

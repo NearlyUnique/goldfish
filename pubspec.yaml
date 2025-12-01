@@ -45,6 +45,8 @@ dependencies:
 
     # Navigation
     go_router: ^14.0.0
+    geolocator: ^14.0.2
+    http: ^1.6.0
 
 dev_dependencies:
     flutter_test:
@@ -59,6 +61,7 @@ dev_dependencies:
 
     # Testing
     mocktail: ^1.0.0
+    fake_cloud_firestore: ^3.1.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

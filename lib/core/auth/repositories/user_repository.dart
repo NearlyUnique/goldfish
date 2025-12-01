@@ -8,9 +8,15 @@ import 'package:goldfish/core/logging/app_logger.dart';
 /// Handles creating, reading, and updating user documents in the cloud.
 class UserRepository {
   /// Creates a new [UserRepository].
+  ///
+  /// The [firestore] parameter can be a real [FirebaseFirestore] instance or
+  /// a compatible fake such as `FakeFirebaseFirestore` for tests, following
+  /// the Firebase testing guidance at
+  /// https://firebase.flutter.dev/docs/testing/testing/.
   UserRepository({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
 
+  /// Underlying Firestore instance (real or fake).
   final FirebaseFirestore _firestore;
 
   /// Collection name for users in Firestore.
@@ -70,14 +76,22 @@ class UserRepository {
     try {
       AppLogger.info({'event': 'user_get_start', 'uid': uid});
 
-      final doc = await _firestore.collection(_usersCollection).doc(uid).get();
+      final doc = await (_firestore as dynamic)
+          .collection(_usersCollection)
+          .doc(uid)
+          .get();
 
       if (!doc.exists) {
         AppLogger.info({'event': 'user_get_not_found', 'uid': uid});
         return null;
       }
 
-      final user = UserModel.fromFirestore(doc);
+      // Use map-based factory to support both real Firestore snapshots and
+      // simple test doubles (duck-typed objects with `id` and `data()`).
+      final user = UserModel.fromMap(
+        (doc.data() as Map<String, dynamic>),
+        doc.id as String,
+      );
       AppLogger.info({'event': 'user_get_success', 'uid': uid});
       return user;
     } catch (e) {

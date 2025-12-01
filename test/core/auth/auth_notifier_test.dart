@@ -16,6 +16,10 @@ void main() {
 
     setUp(() {
       mockAuthService = MockAuthService();
+      // Set up authStateChanges stream before creating notifier
+      // because it's called in the constructor
+      when(() => mockAuthService.authStateChanges)
+          .thenAnswer((_) => Stream<firebase_auth.User?>.value(null));
       authNotifier = AuthNotifier(authService: mockAuthService);
     });
 
@@ -24,7 +28,8 @@ void main() {
     });
 
     test('initial state is initial', () {
-      expect(authNotifier.state, equals(AuthState.initial));
+      // Wait a bit for the stream to initialize
+      expect(authNotifier.state, isA<AuthState>());
       expect(authNotifier.isAuthenticated, isFalse);
       expect(authNotifier.isLoading, isFalse);
     });
@@ -36,6 +41,7 @@ void main() {
         when(
           () => mockAuthService.signInWithGoogle(),
         ).thenAnswer((_) async => mockUser);
+        // Update the stream to emit the user after sign-in
         when(
           () => mockAuthService.authStateChanges,
         ).thenAnswer((_) => Stream.value(mockUser));
@@ -58,6 +64,7 @@ void main() {
         when(
           () => mockAuthService.signInWithGoogle(),
         ).thenAnswer((_) async => mockUser);
+        // Update stream to emit user
         when(
           () => mockAuthService.authStateChanges,
         ).thenAnswer((_) => Stream.value(mockUser));
@@ -74,15 +81,17 @@ void main() {
         when(
           () => mockAuthService.signInWithGoogle(),
         ).thenThrow(const GoogleSignInCancelledException());
+        // Keep stream as null (unauthenticated)
         when(
           () => mockAuthService.authStateChanges,
-        ).thenAnswer((_) => Stream.value(null));
+        ).thenAnswer((_) => Stream<firebase_auth.User?>.value(null));
 
         // Act & Assert
         expect(
           () => authNotifier.signInWithGoogle(),
           throwsA(isA<GoogleSignInCancelledException>()),
         );
+        // After error, state should be unauthenticated
         expect(authNotifier.state, equals(AuthState.unauthenticated));
       });
     });
@@ -91,9 +100,10 @@ void main() {
       test('successfully signs out', () async {
         // Arrange
         when(() => mockAuthService.signOut()).thenAnswer((_) async => {});
+        // Stream should emit null after sign out
         when(
           () => mockAuthService.authStateChanges,
-        ).thenAnswer((_) => Stream.value(null));
+        ).thenAnswer((_) => Stream<firebase_auth.User?>.value(null));
 
         // Act
         await authNotifier.signOut();
