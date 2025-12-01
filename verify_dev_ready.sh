@@ -126,6 +126,11 @@ check_security_audit_tools() {
   fi
 }
 
+check_coverage_tools() {
+  heading "Code coverage tools (optional)"
+  check_optional_command "genhtml" "$HELP_README -> Testing -> Code Coverage"
+}
+
 ensure_repo_root
 
 heading "CLI availability"
@@ -141,6 +146,7 @@ check_env_path "ANDROID_HOME" "$HELP_README -> Android Development Tools"
 run_flutter_doctor
 check_adb_devices
 check_security_audit_tools
+check_coverage_tools
 
 heading "Next steps"
 printf 'For build, test, and APK verification guidance see %s.\n' "$HELP_BOOTSTRAP"

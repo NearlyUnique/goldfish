@@ -23,7 +23,7 @@ BOOTSTRAP_TEST := test/bootstrap_test.dart
 SOURCE_FILES := $(shell find $(LIB_DIR) -name '*.dart' 2>/dev/null)
 
 # Phony targets (always execute, don't produce files)
-.PHONY: help clean em_launch em_run test_watch lint audit audit-osv audit-dep
+.PHONY: help clean em_launch em_run test_watch lint audit audit-osv audit-dep coverage_html
 
 .DEFAULT_GOAL := help
 
@@ -75,13 +75,14 @@ clean: ## Clean build artifacts
 	@echo "Cleaning build artifacts..."
 	@flutter clean
 	@rm -f $(COVERAGE_PATH)
+	@rm -rf coverage/html
 	@echo "Clean complete"
 
 # Test targets - depend on test files and source files
-test: $(TEST_FILES) $(SOURCE_FILES) ## Run all tests
-	@echo "Running all tests..."
-	@flutter test
-	@echo "Tests completed"
+test: $(TEST_FILES) $(SOURCE_FILES) ## Run all tests with coverage
+	@echo "Running all tests with coverage..."
+	@flutter test --coverage
+	@echo "Tests completed. Coverage report generated at: $(COVERAGE_PATH)"
 
 test_bootstrap: $(BOOTSTRAP_TEST) $(SOURCE_FILES) ## Run bootstrap test only
 	@echo "Running bootstrap test..."
@@ -104,6 +105,22 @@ $(COVERAGE_PATH): $(TEST_FILES) $(SOURCE_FILES)
 	@echo "Coverage report generated at: $(COVERAGE_PATH)"
 
 test_coverage: $(COVERAGE_PATH) ## Run tests with coverage report
+
+coverage_html: $(COVERAGE_PATH) ## Generate HTML coverage report
+	@echo "Generating HTML coverage report..."
+	@if command -v genhtml >/dev/null 2>&1; then \
+		mkdir -p coverage/html; \
+		genhtml $(COVERAGE_PATH) -o coverage/html --no-function-coverage --no-branch-coverage; \
+		echo "HTML coverage report generated at: coverage/html/index.html"; \
+		echo "Open with: open coverage/html/index.html (macOS) or xdg-open coverage/html/index.html (Linux)"; \
+	else \
+		echo "Error: genhtml (from lcov package) not found."; \
+		echo "Install lcov:"; \
+		echo "  - Linux: sudo apt-get install lcov"; \
+		echo "  - macOS: brew install lcov"; \
+		echo "  - WSL2: sudo apt-get install lcov"; \
+		exit 1; \
+	fi
 
 # Security audit targets
 audit: audit-osv audit-dep ## Run all security audits (OSV Scanner + dep_audit)

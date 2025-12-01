@@ -246,6 +246,10 @@ echo 'alias adb="/mnt/c/Users/<username>/AppData/Local/Android/Sdk/platform-tool
 - **Java Development Kit (JDK)**: Required for Android builds
   - **WSL2**: Install via `sudo apt install -y openjdk-17-jdk`
   - Set `JAVA_HOME` environment variable (see Android SDK setup above)
+- **lcov**: Required for generating HTML code coverage reports
+  - **WSL2/Linux**: Install via `sudo apt-get install lcov`
+  - **macOS**: Install via `brew install lcov`
+  - Used by `make coverage_html` to generate HTML coverage reports
 
 ### Verification Checklist
 
@@ -553,6 +557,32 @@ flutter test --verbose
 - Use `assert(true)` to verify test framework is working
 - Check test output for logging messages from test execution
 
+#### Code Coverage
+
+The project includes code coverage measurement by default when running tests:
+
+```bash
+# Run tests with coverage (generates LCOV file)
+make test
+# or
+flutter test --coverage
+
+# Generate HTML coverage report (requires lcov package)
+make coverage_html
+```
+
+**Coverage Files**:
+- LCOV format: `coverage/lcov.info` (generated automatically)
+- HTML report: `coverage/html/index.html` (generated with `make coverage_html`)
+
+**Viewing HTML Coverage Report**:
+- **macOS**: `open coverage/html/index.html`
+- **Linux/WSL**: `xdg-open coverage/html/index.html`
+
+**Installing lcov** (required for HTML reports):
+- **WSL2/Linux**: `sudo apt-get install lcov`
+- **macOS**: `brew install lcov`
+
 ### Building
 ```bash
 # Build APK (release)
@@ -692,6 +722,9 @@ make test_watch
 # Run tests with coverage
 make test_coverage
 
+# Generate HTML coverage report (requires lcov)
+make coverage_html
+
 # Run lint/analysis
 make lint
 
@@ -798,7 +831,8 @@ flutter logs                 # View app logs
 # Testing
 flutter test                 # Run all tests
 flutter test --coverage      # Run tests with coverage
-make test                    # Run tests (Makefile)
+make test                    # Run tests with coverage (Makefile)
+make coverage_html           # Generate HTML coverage report (requires lcov)
 
 # Code Quality
 dart format .                # Format code
