@@ -13,23 +13,21 @@ class FirebaseService {
   /// Throws [FirebaseException] if initialization fails.
   static Future<void> initialize() async {
     try {
-      AppLogger.info({'event': 'firebase_initialization_start'});
       await Firebase.initializeApp();
-      AppLogger.info({'event': 'firebase_initialization_success'});
+      AppLogger.info({'event': 'firebase_initialization'});
     } on FirebaseException catch (e) {
       AppLogger.error({
-        'event': 'firebase_initialization_failure',
+        'event': 'firebase_initialization',
         'code': e.code,
         'message': e.message,
       });
       rethrow;
     } catch (e) {
       AppLogger.error({
-        'event': 'firebase_initialization_error',
+        'event': 'firebase_initialization',
         'error': e.toString(),
       });
       rethrow;
     }
   }
 }
-

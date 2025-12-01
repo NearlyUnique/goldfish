@@ -15,9 +15,9 @@ class AuthService {
     firebase_auth.FirebaseAuth? firebaseAuth,
     GoogleSignIn? googleSignIn,
     UserRepository? userRepository,
-  })  : _firebaseAuth = firebaseAuth ?? firebase_auth.FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn(),
-        _userRepository = userRepository ?? UserRepository();
+  }) : _firebaseAuth = firebaseAuth ?? firebase_auth.FirebaseAuth.instance,
+       _googleSignIn = googleSignIn ?? GoogleSignIn(),
+       _userRepository = userRepository ?? UserRepository();
 
   final firebase_auth.FirebaseAuth _firebaseAuth;
   final GoogleSignIn _googleSignIn;
@@ -27,7 +27,8 @@ class AuthService {
   ///
   /// Emits the current [firebase_auth.User] when signed in, or `null` when
   /// signed out.
-  Stream<firebase_auth.User?> get authStateChanges => _firebaseAuth.authStateChanges();
+  Stream<firebase_auth.User?> get authStateChanges =>
+      _firebaseAuth.authStateChanges();
 
   /// Gets the current authenticated user, or `null` if not signed in.
   firebase_auth.User? get currentUser => _firebaseAuth.currentUser;
@@ -37,8 +38,6 @@ class AuthService {
   /// Throws [AuthException] if sign-in fails.
   Future<firebase_auth.User> signInWithGoogle() async {
     try {
-      AppLogger.info({'event': 'google_sign_in_start'});
-
       // Trigger the Google Sign-In flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
@@ -58,8 +57,9 @@ class AuthService {
       );
 
       // Sign in to Firebase with the Google credential
-      final userCredential =
-          await _firebaseAuth.signInWithCredential(credential);
+      final userCredential = await _firebaseAuth.signInWithCredential(
+        credential,
+      );
 
       final user = userCredential.user;
       if (user == null) {
@@ -72,15 +72,12 @@ class AuthService {
       // Create or update user document in Firestore
       await _createOrUpdateUserDocument(user);
 
-      AppLogger.info({
-        'event': 'google_sign_in_success',
-        'uid': user.uid,
-      });
+      AppLogger.info({'event': 'google_sign_in', 'uid': user.uid});
 
       return user;
     } on firebase_auth.FirebaseAuthException catch (e) {
       AppLogger.error({
-        'event': 'google_sign_in_firebase_error',
+        'event': 'google_sign_in',
         'code': e.code,
         'message': e.message,
       });
@@ -91,10 +88,7 @@ class AuthService {
     } on AuthException {
       rethrow;
     } catch (e) {
-      AppLogger.error({
-        'event': 'google_sign_in_error',
-        'error': e.toString(),
-      });
+      AppLogger.error({'event': 'google_sign_in', 'error': e.toString()});
 
       // Handle specific Google Sign-In errors
       if (e.toString().contains('network_error') ||
@@ -116,22 +110,11 @@ class AuthService {
   /// Signs out from both Firebase and Google Sign-In.
   Future<void> signOut() async {
     try {
-      AppLogger.info({
-        'event': 'sign_out_start',
-        'uid': currentUser?.uid,
-      });
+      await Future.wait([_firebaseAuth.signOut(), _googleSignIn.signOut()]);
 
-      await Future.wait([
-        _firebaseAuth.signOut(),
-        _googleSignIn.signOut(),
-      ]);
-
-      AppLogger.info({'event': 'sign_out_success'});
+      AppLogger.info({'event': 'sign_out'});
     } catch (e) {
-      AppLogger.error({
-        'event': 'sign_out_error',
-        'error': e.toString(),
-      });
+      AppLogger.error({'event': 'sign_out', 'error': e.toString()});
       rethrow;
     }
   }
@@ -166,4 +149,3 @@ class AuthService {
     }
   }
 }
-

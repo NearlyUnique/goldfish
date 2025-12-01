@@ -27,17 +27,15 @@ class UserRepository {
   /// Throws [UserDataException] if the operation fails.
   Future<void> createUser(UserModel user) async {
     try {
-      AppLogger.info({'event': 'user_create_start', 'uid': user.uid});
-
       await _firestore
           .collection(_usersCollection)
           .doc(user.uid)
           .set(user.toMap());
 
-      AppLogger.info({'event': 'user_create_success', 'uid': user.uid});
+      AppLogger.info({'event': 'user_create', 'uid': user.uid});
     } catch (e) {
       AppLogger.error({
-        'event': 'user_create_failure',
+        'event': 'user_create',
         'uid': user.uid,
         'error': e.toString(),
       });
@@ -50,17 +48,15 @@ class UserRepository {
   /// Throws [UserDataException] if the operation fails.
   Future<void> updateUser(UserModel user) async {
     try {
-      AppLogger.info({'event': 'user_update_start', 'uid': user.uid});
-
       await _firestore
           .collection(_usersCollection)
           .doc(user.uid)
           .update(user.toMap());
 
-      AppLogger.info({'event': 'user_update_success', 'uid': user.uid});
+      AppLogger.info({'event': 'user_update', 'uid': user.uid});
     } catch (e) {
       AppLogger.error({
-        'event': 'user_update_failure',
+        'event': 'user_update',
         'uid': user.uid,
         'error': e.toString(),
       });
@@ -74,8 +70,6 @@ class UserRepository {
   /// Throws [UserDataException] if the operation fails.
   Future<UserModel?> getUser(String uid) async {
     try {
-      AppLogger.info({'event': 'user_get_start', 'uid': uid});
-
       final doc = await (_firestore as dynamic)
           .collection(_usersCollection)
           .doc(uid)
@@ -92,14 +86,10 @@ class UserRepository {
         (doc.data() as Map<String, dynamic>),
         doc.id as String,
       );
-      AppLogger.info({'event': 'user_get_success', 'uid': uid});
+      AppLogger.info({'event': 'user_get', 'uid': uid});
       return user;
     } catch (e) {
-      AppLogger.error({
-        'event': 'user_get_failure',
-        'uid': uid,
-        'error': e.toString(),
-      });
+      AppLogger.error({'event': 'user_get', 'uid': uid, 'error': e.toString()});
       throw UserDataException('Failed to get user: ${e.toString()}');
     }
   }
