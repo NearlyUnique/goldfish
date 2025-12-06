@@ -104,7 +104,7 @@ class OverpassClient {
         );
       }
 
-      if (jsonResponse.containsKey('elements') == false) {
+      if (!jsonResponse.containsKey('elements')) {
         AppLogger.error({
           'event': 'overpass_api_invalid_response',
           'latitude': latitude,

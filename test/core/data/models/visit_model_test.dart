@@ -5,29 +5,29 @@ import 'package:goldfish/core/data/models/visit_model.dart';
 void main() {
   group('GeoLatLong', () {
     test('creates instance with required fields', () {
-      const geo = GeoLatLong(lat: 52.1993, long: 0.1390);
-      expect(geo.lat, 52.1993);
-      expect(geo.long, 0.1390);
+      const geo = GeoLatLong(lat: 45.0, long: -90.0);
+      expect(geo.lat, 45.0);
+      expect(geo.long, -90.0);
     });
 
     test('converts to and from map', () {
-      const geo = GeoLatLong(lat: 52.1993, long: 0.1390);
+      const geo = GeoLatLong(lat: 45.0, long: -90.0);
       final map = geo.toMap();
       final restored = GeoLatLong.fromMap(map);
       expect(restored, geo);
     });
 
     test('copyWith creates new instance with updated fields', () {
-      const geo = GeoLatLong(lat: 52.1993, long: 0.1390);
+      const geo = GeoLatLong(lat: 45.0, long: -90.0);
       final updated = geo.copyWith(lat: 52.5);
       expect(updated.lat, 52.5);
-      expect(updated.long, 0.1390);
+      expect(updated.long, -90.0);
     });
 
     test('equality works correctly', () {
-      const geo1 = GeoLatLong(lat: 52.1993, long: 0.1390);
-      const geo2 = GeoLatLong(lat: 52.1993, long: 0.1390);
-      const geo3 = GeoLatLong(lat: 52.5, long: 0.1390);
+      const geo1 = GeoLatLong(lat: 45.0, long: -90.0);
+      const geo2 = GeoLatLong(lat: 45.0, long: -90.0);
+      const geo3 = GeoLatLong(lat: 52.5, long: -90.0);
       expect(geo1, geo2);
       expect(geo1, isNot(geo3));
     });
@@ -68,12 +68,12 @@ void main() {
       const address = Address(
         nameNumber: '123',
         street: 'Main Street',
-        city: 'Cambridge',
+        city: 'Example City',
         postcode: 'CB1 1AA',
       );
       expect(address.nameNumber, '123');
       expect(address.street, 'Main Street');
-      expect(address.city, 'Cambridge');
+      expect(address.city, 'Example City');
       expect(address.postcode, 'CB1 1AA');
     });
 
@@ -89,7 +89,7 @@ void main() {
       const address = Address(
         nameNumber: '123',
         street: 'Main Street',
-        city: 'Cambridge',
+        city: 'Example City',
         postcode: 'CB1 1AA',
       );
       final map = address.toMap();
@@ -101,26 +101,26 @@ void main() {
       const address = Address(
         nameNumber: '123',
         street: 'Main Street',
-        city: 'Cambridge',
+        city: 'Example City',
         postcode: 'CB1 1AA',
       );
       expect(
         address.toFormattedString(),
-        '123, Main Street, Cambridge, CB1 1AA',
+        '123, Main Street, Example City, CB1 1AA',
       );
     });
 
     test('toFormattedString handles null fields', () {
-      const address = Address(street: 'Main Street', city: 'Cambridge');
-      expect(address.toFormattedString(), 'Main Street, Cambridge');
+      const address = Address(street: 'Main Street', city: 'Example City');
+      expect(address.toFormattedString(), 'Main Street, Example City');
     });
 
     test('copyWith creates new instance with updated fields', () {
-      const address = Address(street: 'Main Street', city: 'Cambridge');
-      final updated = address.copyWith(postcode: 'CB1 1AA');
+      const address = Address(street: 'Main Street', city: 'Example City');
+      final updated = address.copyWith(postcode: 'EX1 1AA');
       expect(updated.street, 'Main Street');
-      expect(updated.city, 'Cambridge');
-      expect(updated.postcode, 'CB1 1AA');
+      expect(updated.city, 'Example City');
+      expect(updated.postcode, 'EX1 1AA');
     });
   });
 
@@ -142,7 +142,7 @@ void main() {
     });
 
     test('creates instance with all fields', () {
-      const gps = GeoLatLong(lat: 52.1993, long: 0.1390);
+      const gps = GeoLatLong(lat: 45.0, long: -90.0);
       const address = Address(street: 'Main Street', city: 'Cambridge');
       const placeType = LocationType(type: 'amenity', subType: 'pub');
       final visit = Visit(
@@ -168,7 +168,7 @@ void main() {
       final data = {
         'user_id': 'user123',
         'place_name': 'Test Place',
-        'gps_recorded': {'lat': 52.1993, 'long': 0.1390},
+        'gps_recorded': {'lat': 45.0, 'long': -90.0},
         'place_type': {'type': 'amenity', 'sub_type': 'pub'},
         'added_at': timestamp,
         'created_at': timestamp,
@@ -178,12 +178,12 @@ void main() {
       expect(visit.id, 'visit123');
       expect(visit.userId, 'user123');
       expect(visit.placeName, 'Test Place');
-      expect(visit.gpsRecorded?.lat, 52.1993);
+      expect(visit.gpsRecorded?.lat, 45.0);
       expect(visit.placeType?.type, 'amenity');
     });
 
     test('toMap converts to Firestore format', () {
-      const gps = GeoLatLong(lat: 52.1993, long: 0.1390);
+      const gps = GeoLatLong(lat: 45.0, long: -90.0);
       final visit = Visit(
         userId: 'user123',
         placeName: 'Test Place',

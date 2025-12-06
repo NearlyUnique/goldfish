@@ -8,20 +8,23 @@ import 'package:goldfish/core/logging/app_logger.dart';
 /// - Logging works in tests
 /// - Tests can be executed with `flutter test`
 void main() {
-  test('App bootstrap test', () {
-    // Log test start
-    AppLogger.info({
-      'event': 'test_started',
-      'test_name': 'App bootstrap test',
-    });
+  test('AppLogger can log info and error events', () {
+    // Verify logging doesn't throw exceptions
+    expect(() {
+      AppLogger.info({
+        'event': 'test_started',
+        'test_name': 'App bootstrap test',
+      });
+    }, returnsNormally);
 
-    // Assert true to verify test framework works
-    assert(true, 'Test framework should work correctly');
+    expect(() {
+      AppLogger.error({
+        'event': 'test_error',
+        'error': 'Test error message',
+      });
+    }, returnsNormally);
 
-    // Log test completion
-    AppLogger.info({
-      'event': 'test_completed',
-      'test_name': 'App bootstrap test',
-    });
+    // Verify test framework works
+    expect(true, isTrue);
   });
 }

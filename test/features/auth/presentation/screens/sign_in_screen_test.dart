@@ -2,23 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goldfish/core/auth/auth_notifier.dart';
 import 'package:goldfish/features/auth/presentation/screens/sign_in_screen.dart';
-import 'package:mocktail/mocktail.dart';
-
-class MockAuthNotifier extends Mock implements AuthNotifier {}
+import '../../../../../test/fakes/auth_notifier_fake.dart';
 
 void main() {
   group('SignInScreen', () {
-    late MockAuthNotifier mockAuthNotifier;
+    late FakeAuthNotifier fakeAuthNotifier;
 
     setUp(() {
-      mockAuthNotifier = MockAuthNotifier();
-      when(() => mockAuthNotifier.isLoading).thenReturn(false);
-      when(() => mockAuthNotifier.isAuthenticated).thenReturn(false);
+      fakeAuthNotifier = FakeAuthNotifier(
+        initialState: AuthState.unauthenticated,
+      );
     });
 
     Widget createWidgetUnderTest() {
       return MaterialApp(
-        home: SignInScreen(authNotifier: mockAuthNotifier),
+        home: SignInScreen(authNotifier: fakeAuthNotifier),
       );
     }
 
@@ -34,8 +32,10 @@ void main() {
 
     testWidgets('calls signInWithGoogle when button is tapped', (tester) async {
       // Arrange
-      when(() => mockAuthNotifier.signInWithGoogle())
-          .thenAnswer((_) async => {});
+      var signInCalled = false;
+      fakeAuthNotifier.onSignInWithGoogle = () async {
+        signInCalled = true;
+      };
       await tester.pumpWidget(createWidgetUnderTest());
 
       // Act
@@ -43,13 +43,19 @@ void main() {
       await tester.pump();
 
       // Assert
-      verify(() => mockAuthNotifier.signInWithGoogle()).called(1);
+      expect(signInCalled, isTrue);
     });
 
     testWidgets('shows loading state when signing in', (tester) async {
       // Arrange
-      when(() => mockAuthNotifier.isLoading).thenReturn(true);
-      await tester.pumpWidget(createWidgetUnderTest());
+      final loadingNotifier = FakeAuthNotifier(
+        initialState: AuthState.loading,
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SignInScreen(authNotifier: loadingNotifier),
+        ),
+      );
 
       // Assert
       expect(find.text('Signing in...'), findsOneWidget);
@@ -58,8 +64,9 @@ void main() {
 
     testWidgets('shows error message on sign-in failure', (tester) async {
       // Arrange
-      when(() => mockAuthNotifier.signInWithGoogle())
-          .thenThrow(Exception('Sign-in failed'));
+      fakeAuthNotifier.onSignInWithGoogle = () async {
+        throw Exception('Sign-in failed');
+      };
       await tester.pumpWidget(createWidgetUnderTest());
 
       // Act

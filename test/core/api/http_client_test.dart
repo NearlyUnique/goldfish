@@ -3,19 +3,10 @@ import 'package:goldfish/core/api/http_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import 'test_helpers.dart';
+
 void main() {
   group('HttpPackageClient', () {
-    late http.Client mockClient;
-    late HttpPackageClient httpPackageClient;
-
-    setUp(() {
-      // Default mock client that returns OK for any request
-      mockClient = MockClient((request) async {
-        return http.Response('OK', 200);
-      });
-      httpPackageClient = HttpPackageClient(client: mockClient);
-    });
-
     group('post', () {
       test('successfully sends POST request with headers and body', () async {
         // Arrange
@@ -25,15 +16,17 @@ void main() {
         final expectedResponse = http.Response('{"success": true}', 200);
 
         final capturedCalls = <Map<String, dynamic>>[];
-        mockClient = MockClient((request) async {
-          capturedCalls.add({
-            'url': request.url,
-            'headers': request.headers,
-            'body': request.body,
-          });
-          return expectedResponse;
-        });
-        httpPackageClient = HttpPackageClient(client: mockClient);
+        final mockClient = createCapturingMockClient(
+          response: expectedResponse,
+          onRequest: (request) {
+            capturedCalls.add({
+              'url': request.url,
+              'headers': request.headers,
+              'body': request.body,
+            });
+          },
+        );
+        final httpPackageClient = createMockHttpClient(mockClient: mockClient);
 
         // Act
         final result = await httpPackageClient.post(
@@ -57,15 +50,17 @@ void main() {
         final expectedResponse = http.Response('OK', 200);
 
         final capturedCalls = <Map<String, dynamic>>[];
-        mockClient = MockClient((request) async {
-          capturedCalls.add({
-            'url': request.url,
-            'headers': request.headers,
-            'body': request.body,
-          });
-          return expectedResponse;
-        });
-        httpPackageClient = HttpPackageClient(client: mockClient);
+        final mockClient = createCapturingMockClient(
+          response: expectedResponse,
+          onRequest: (request) {
+            capturedCalls.add({
+              'url': request.url,
+              'headers': request.headers,
+              'body': request.body,
+            });
+          },
+        );
+        final httpPackageClient = createMockHttpClient(mockClient: mockClient);
 
         // Act
         final result = await httpPackageClient.post(url);
@@ -84,10 +79,8 @@ void main() {
         final url = Uri.parse('https://example.com/api');
         final exception = http.ClientException('Network error');
 
-        mockClient = MockClient((request) {
-          throw exception;
-        });
-        httpPackageClient = HttpPackageClient(client: mockClient);
+        final mockClient = createThrowingMockClient(exception: exception);
+        final httpPackageClient = createMockHttpClient(mockClient: mockClient);
 
         // Act & Assert
         expect(
@@ -101,10 +94,7 @@ void main() {
         final url = Uri.parse('https://example.com/api');
         final errorResponse = http.Response('Not Found', 404);
 
-        mockClient = MockClient((request) async {
-          return errorResponse;
-        });
-        httpPackageClient = HttpPackageClient(client: mockClient);
+        final httpPackageClient = createMockHttpClient(response: errorResponse);
 
         // Act
         final result = await httpPackageClient.post(url);

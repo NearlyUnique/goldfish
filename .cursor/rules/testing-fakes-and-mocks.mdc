@@ -211,6 +211,9 @@ Only consider a third-party mocking package when:
 
 - You have a large number of interfaces that change frequently.
 - The boilerplate for hand-written fakes becomes a maintenance burden.
+- You need to mock complex third-party services with many methods and nested objects (e.g., Firebase Auth, Google Sign In). In these cases, `mocktail` may be more practical than creating extensive function-field fakes.
+
+**Current usage of `mocktail`**: The project uses `mocktail` only for testing Firebase Auth and Google Sign In integration in `auth_service_test.dart`, as these third-party services have complex APIs with many methods and nested objects. For all other dependencies (including our own services, repositories, and notifiers), prefer function-field fakes.
 
 ---
 
@@ -237,7 +240,7 @@ test('successfully sends POST request', () async {
     });
     return http.Response('{"success": true}', 200);
   });
-  
+
   final httpPackageClient = HttpPackageClient(client: mockClient);
 
   // Act

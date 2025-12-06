@@ -6,13 +6,13 @@ void main() {
     test('creates instance with required fields', () {
       const suggestion = PlaceSuggestion(
         name: 'Test Place',
-        latitude: 52.1993,
-        longitude: 0.1390,
+        latitude: 45.0,
+        longitude: -90.0,
         tags: {},
       );
       expect(suggestion.name, 'Test Place');
-      expect(suggestion.latitude, 52.1993);
-      expect(suggestion.longitude, 0.1390);
+      expect(suggestion.latitude, 45.0);
+      expect(suggestion.longitude, -90.0);
       expect(suggestion.amenityType, isNull);
       expect(suggestion.address, isNull);
     });
@@ -21,14 +21,14 @@ void main() {
       const suggestion = PlaceSuggestion(
         name: 'Test Pub',
         amenityType: 'amenity:pub',
-        latitude: 52.1993,
-        longitude: 0.1390,
-        address: '123 Main St, Cambridge',
+        latitude: 45.0,
+        longitude: -90.0,
+        address: '123 Main St, Example City',
         tags: {'amenity': 'pub', 'name': 'Test Pub'},
       );
       expect(suggestion.name, 'Test Pub');
       expect(suggestion.amenityType, 'amenity:pub');
-      expect(suggestion.address, '123 Main St, Cambridge');
+      expect(suggestion.address, '123 Main St, Example City');
       expect(suggestion.tags['amenity'], 'pub');
     });
 
@@ -37,8 +37,8 @@ void main() {
         final element = {
           'type': 'node',
           'id': 123456,
-          'lat': 52.1993,
-          'lon': 0.1390,
+          'lat': 45.0,
+          'lon': -90.0,
           'tags': {'name': 'The Eagle', 'amenity': 'pub'},
         };
 
@@ -46,8 +46,8 @@ void main() {
 
         expect(suggestion.name, 'The Eagle');
         expect(suggestion.amenityType, 'amenity:pub');
-        expect(suggestion.latitude, 52.1993);
-        expect(suggestion.longitude, 0.1390);
+        expect(suggestion.latitude, 45.0);
+        expect(suggestion.longitude, -90.0);
         expect(suggestion.tags['name'], 'The Eagle');
         expect(suggestion.tags['amenity'], 'pub');
       });
@@ -57,12 +57,12 @@ void main() {
           'type': 'way',
           'id': 789012,
           'center': {'lat': 52.2050, 'lon': 0.1200},
-          'tags': {'name': 'Cambridge Market', 'shop': 'market'},
+          'tags': {'name': 'Example Market', 'shop': 'market'},
         };
 
         final suggestion = PlaceSuggestion.fromOverpassElement(element);
 
-        expect(suggestion.name, 'Cambridge Market');
+        expect(suggestion.name, 'Example Market');
         expect(suggestion.amenityType, 'shop:market');
         expect(suggestion.latitude, 52.2050);
         expect(suggestion.longitude, 0.1200);
@@ -88,47 +88,47 @@ void main() {
         final element = {
           'type': 'node',
           'id': 123456,
-          'lat': 52.1993,
-          'lon': 0.1390,
+          'lat': 45.0,
+          'lon': -90.0,
           'tags': {
             'name': 'The Eagle',
             'amenity': 'pub',
             'addr:housenumber': '8',
             'addr:street': 'Benet Street',
-            'addr:city': 'Cambridge',
+            'addr:city': 'Example City',
             'addr:postcode': 'CB2 3QN',
           },
         };
 
         final suggestion = PlaceSuggestion.fromOverpassElement(element);
 
-        expect(suggestion.address, '8, Benet Street, Cambridge, CB2 3QN');
+        expect(suggestion.address, '8, Benet Street, Example City, CB2 3QN');
       });
 
       test('handles partial address information', () {
         final element = {
           'type': 'node',
           'id': 123456,
-          'lat': 52.1993,
-          'lon': 0.1390,
+          'lat': 45.0,
+          'lon': -90.0,
           'tags': {
             'name': 'The Eagle',
             'addr:street': 'Benet Street',
-            'addr:city': 'Cambridge',
+            'addr:city': 'Example City',
           },
         };
 
         final suggestion = PlaceSuggestion.fromOverpassElement(element);
 
-        expect(suggestion.address, 'Benet Street, Cambridge');
+        expect(suggestion.address, 'Benet Street, Example City');
       });
 
       test('uses name:en as fallback when name not available', () {
         final element = {
           'type': 'node',
           'id': 123456,
-          'lat': 52.1993,
-          'lon': 0.1390,
+          'lat': 45.0,
+          'lon': -90.0,
           'tags': {'name:en': 'The Eagle Pub', 'amenity': 'pub'},
         };
 
@@ -141,8 +141,8 @@ void main() {
         final element = {
           'type': 'node',
           'id': 123456,
-          'lat': 52.1993,
-          'lon': 0.1390,
+          'lat': 45.0,
+          'lon': -90.0,
           'tags': {'amenity': 'pub'},
         };
 
@@ -174,8 +174,8 @@ void main() {
           final element = {
             'type': 'node',
             'id': 123456,
-            'lat': 52.1993,
-            'lon': 0.1390,
+            'lat': 45.0,
+            'lon': -90.0,
             'tags': {'name': 'Test Place', tagKey: tagValue},
           };
 
@@ -192,8 +192,8 @@ void main() {
         final element = {
           'type': 'node',
           'id': 123456,
-          'lat': 52.1993,
-          'lon': 0.1390,
+          'lat': 45.0,
+          'lon': -90.0,
           'tags': {'name': 'Test Place'},
         };
 
@@ -206,8 +206,8 @@ void main() {
         final element = {
           'type': 'node',
           'id': 123456,
-          'lat': 52.1993,
-          'lon': 0.1390,
+          'lat': 45.0,
+          'lon': -90.0,
           'tags': <String, dynamic>{},
         };
 
@@ -223,8 +223,8 @@ void main() {
         final element = {
           'type': 'node',
           'id': 123456,
-          'lat': 52.1993,
-          'lon': 0.1390,
+          'lat': 45.0,
+          'lon': -90.0,
         };
 
         final suggestion = PlaceSuggestion.fromOverpassElement(element);
@@ -267,8 +267,8 @@ void main() {
             {
               'type': 'node',
               'id': 1,
-              'lat': 52.1993,
-              'lon': 0.1390,
+              'lat': 45.0,
+              'lon': -90.0,
               'tags': {'name': 'Place 1', 'amenity': 'pub'},
             },
             {
@@ -302,8 +302,8 @@ void main() {
             {
               'type': 'node',
               'id': 1,
-              'lat': 52.1993,
-              'lon': 0.1390,
+              'lat': 45.0,
+              'lon': -90.0,
               'tags': {'name': 'Valid Place'},
             },
             {
@@ -333,8 +333,8 @@ void main() {
       test('creates new instance with updated fields', () {
         const original = PlaceSuggestion(
           name: 'Original Name',
-          latitude: 52.1993,
-          longitude: 0.1390,
+          latitude: 45.0,
+          longitude: -90.0,
           tags: {'key': 'value'},
         );
 
@@ -345,16 +345,16 @@ void main() {
 
         expect(updated.name, 'Updated Name');
         expect(updated.amenityType, 'amenity:pub');
-        expect(updated.latitude, 52.1993); // Unchanged
-        expect(updated.longitude, 0.1390); // Unchanged
+        expect(updated.latitude, 45.0); // Unchanged
+        expect(updated.longitude, -90.0); // Unchanged
       });
 
       test('preserves original values when null passed to copyWith', () {
         const original = PlaceSuggestion(
           name: 'Original Name',
           amenityType: 'amenity:pub',
-          latitude: 52.1993,
-          longitude: 0.1390,
+          latitude: 45.0,
+          longitude: -90.0,
           address: '123 Main St',
           tags: {},
         );
@@ -374,8 +374,8 @@ void main() {
         const suggestion1 = PlaceSuggestion(
           name: 'Test Place',
           amenityType: 'amenity:pub',
-          latitude: 52.1993,
-          longitude: 0.1390,
+          latitude: 45.0,
+          longitude: -90.0,
           address: '123 Main St',
           tags: {'key': 'value'},
         );
@@ -383,8 +383,8 @@ void main() {
         const suggestion2 = PlaceSuggestion(
           name: 'Test Place',
           amenityType: 'amenity:pub',
-          latitude: 52.1993,
-          longitude: 0.1390,
+          latitude: 45.0,
+          longitude: -90.0,
           address: '123 Main St',
           tags: {'key': 'value'},
         );
@@ -396,15 +396,15 @@ void main() {
       test('two instances with different values are not equal', () {
         const suggestion1 = PlaceSuggestion(
           name: 'Test Place',
-          latitude: 52.1993,
-          longitude: 0.1390,
+          latitude: 45.0,
+          longitude: -90.0,
           tags: {},
         );
 
         const suggestion2 = PlaceSuggestion(
           name: 'Different Place',
-          latitude: 52.1993,
-          longitude: 0.1390,
+          latitude: 45.0,
+          longitude: -90.0,
           tags: {},
         );
 
@@ -417,8 +417,8 @@ void main() {
         const suggestion = PlaceSuggestion(
           name: 'Test Place',
           amenityType: 'amenity:pub',
-          latitude: 52.1993,
-          longitude: 0.1390,
+          latitude: 45.0,
+          longitude: -90.0,
           tags: {},
         );
 
@@ -427,8 +427,8 @@ void main() {
         expect(str, contains('PlaceSuggestion'));
         expect(str, contains('Test Place'));
         expect(str, contains('amenity:pub'));
-        expect(str, contains('52.1993'));
-        expect(str, contains('0.139')); // May be formatted as 0.139 or 0.1390
+        expect(str, contains('45.0'));
+        expect(str, contains('-90.0'));
       });
     });
   });
