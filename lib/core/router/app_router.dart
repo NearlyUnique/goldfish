@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:goldfish/core/auth/auth_notifier.dart';
 import 'package:goldfish/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:goldfish/features/home/presentation/screens/home_screen.dart';
+import 'package:goldfish/features/visits/presentation/screens/record_visit_screen.dart';
 
 /// Configuration for app navigation with authentication guards.
 ///
@@ -29,6 +30,13 @@ class AppRouter {
         path: '/',
         name: 'home',
         builder: (context, state) => HomeScreen(authNotifier: _authNotifier),
+      ),
+      GoRoute(
+        path: '/record-visit',
+        name: 'record-visit',
+        builder: (context, state) => RecordVisitScreen(
+          authNotifier: _authNotifier,
+        ),
       ),
     ],
   );
