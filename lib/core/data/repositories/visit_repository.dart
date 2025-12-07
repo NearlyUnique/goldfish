@@ -13,8 +13,8 @@ class VisitRepository {
   /// a compatible fake such as `FakeFirebaseFirestore` for tests, following
   /// the Firebase testing guidance at
   /// https://firebase.flutter.dev/docs/testing/testing/.
-  VisitRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  VisitRepository({required FirebaseFirestore firestore})
+    : _firestore = firestore;
 
   /// Underlying Firestore instance (real or fake).
   final FirebaseFirestore _firestore;
@@ -80,10 +80,7 @@ class VisitRepository {
       final visits = <Visit>[];
       for (final doc in querySnapshot.docs) {
         try {
-          final visit = Visit.fromMap(
-            doc.data(),
-            doc.id,
-          );
+          final visit = Visit.fromMap(doc.data(), doc.id);
           visits.add(visit);
         } catch (e) {
           AppLogger.error({
@@ -109,9 +106,7 @@ class VisitRepository {
         'user_id': userId,
         'error': e.toString(),
       });
-      throw VisitDataException(
-        'Failed to get user visits: ${e.toString()}',
-      );
+      throw VisitDataException('Failed to get user visits: ${e.toString()}');
     }
   }
 
@@ -151,11 +146,7 @@ class VisitRepository {
 
       final visit = Visit.fromMap(data, doc.id as String);
 
-      AppLogger.info({
-        'event': 'visit_get',
-        'visit_id': id,
-        'user_id': userId,
-      });
+      AppLogger.info({'event': 'visit_get', 'visit_id': id, 'user_id': userId});
 
       return visit;
     } catch (e) {
@@ -165,10 +156,7 @@ class VisitRepository {
         'user_id': userId,
         'error': e.toString(),
       });
-      throw VisitDataException(
-        'Failed to get visit: ${e.toString()}',
-      );
+      throw VisitDataException('Failed to get visit: ${e.toString()}');
     }
   }
 }
-

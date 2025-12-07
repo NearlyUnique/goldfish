@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:goldfish/core/auth/auth_notifier.dart';
@@ -38,7 +39,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _visitRepository = widget._visitRepository ?? VisitRepository();
+    _visitRepository =
+        widget._visitRepository ??
+        VisitRepository(firestore: FirebaseFirestore.instance);
     _loadVisits();
   }
 
@@ -139,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
@@ -157,9 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Text(
           visit.placeName,
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,9 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBody() {
     if (_isLoading && _visits.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null && _visits.isEmpty) {
@@ -207,8 +206,8 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 _error!,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                  color: Theme.of(context).colorScheme.error,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
@@ -245,8 +244,8 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 'Tap the + button to record your first visit',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -332,9 +331,10 @@ class _AmenityTypeChip extends StatelessWidget {
     // Format "key:value" to "Value" or "Key: Value"
     final formattedValue = subType
         .split('_')
-        .map((word) => word.isEmpty
-            ? ''
-            : word[0].toUpperCase() + word.substring(1))
+        .map(
+          (word) =>
+              word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1),
+        )
         .join(' ');
 
     // For common keys, just show the value
@@ -360,9 +360,9 @@ class _AmenityTypeChip extends StatelessWidget {
       label: Text(
         _formatType(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w500,
+        ),
       ),
       backgroundColor: colorScheme.surfaceContainerHighest,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -371,4 +371,3 @@ class _AmenityTypeChip extends StatelessWidget {
     );
   }
 }
-

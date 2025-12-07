@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:goldfish/core/api/http_client.dart';
@@ -56,7 +57,9 @@ class _RecordVisitScreenState extends State<RecordVisitScreen> {
     final locationService = GeolocatorLocationService();
     final httpClient = HttpPackageClient();
     final overpassClient = OverpassClient(httpClient: httpClient);
-    final visitRepository = VisitRepository();
+    final visitRepository = VisitRepository(
+      firestore: FirebaseFirestore.instance,
+    );
 
     return RecordVisitViewModel(
       locationService: locationService,

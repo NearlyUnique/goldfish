@@ -12,15 +12,12 @@ import 'package:goldfish/core/logging/app_logger.dart';
 class AuthService {
   /// Creates a new [AuthService].
   AuthService({
-    firebase_auth.FirebaseAuth? firebaseAuth,
-    GoogleSignIn? googleSignIn,
-    UserRepository? userRepository,
-  }) : _firebaseAuth = firebaseAuth ?? firebase_auth.FirebaseAuth.instance,
-       _googleSignIn = googleSignIn ??
-           GoogleSignIn(
-             signInOption: SignInOption.standard,
-           ),
-       _userRepository = userRepository ?? UserRepository();
+    required firebase_auth.FirebaseAuth firebaseAuth,
+    required GoogleSignIn googleSignIn,
+    required UserRepository userRepository,
+  })  : _firebaseAuth = firebaseAuth,
+        _googleSignIn = googleSignIn,
+        _userRepository = userRepository;
 
   final firebase_auth.FirebaseAuth _firebaseAuth;
   final GoogleSignIn _googleSignIn;

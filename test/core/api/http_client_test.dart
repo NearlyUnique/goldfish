@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:goldfish/core/api/http_client.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 
 import 'test_helpers.dart';
 
@@ -12,7 +11,7 @@ void main() {
         // Arrange
         final url = Uri.parse('https://example.com/api');
         final headers = {'Content-Type': 'application/json'};
-        final body = '{"key": "value"}';
+        const body = '{"key": "value"}';
         final expectedResponse = http.Response('{"success": true}', 200);
 
         final capturedCalls = <Map<String, dynamic>>[];

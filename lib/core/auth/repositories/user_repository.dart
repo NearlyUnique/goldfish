@@ -13,8 +13,8 @@ class UserRepository {
   /// a compatible fake such as `FakeFirebaseFirestore` for tests, following
   /// the Firebase testing guidance at
   /// https://firebase.flutter.dev/docs/testing/testing/.
-  UserRepository({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  UserRepository({required FirebaseFirestore firestore})
+      : _firestore = firestore;
 
   /// Underlying Firestore instance (real or fake).
   final FirebaseFirestore _firestore;

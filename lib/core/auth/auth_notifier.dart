@@ -25,8 +25,8 @@ enum AuthState {
 /// to the UI layer.
 class AuthNotifier extends ChangeNotifier {
   /// Creates a new [AuthNotifier].
-  AuthNotifier({AuthService? authService})
-      : _authService = authService ?? AuthService() {
+  AuthNotifier({required AuthService authService})
+      : _authService = authService {
     _initialize();
   }
 

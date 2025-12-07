@@ -1,6 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:goldfish/core/app_lifecycle_observer.dart';
 import 'package:goldfish/core/auth/auth_notifier.dart';
+import 'package:goldfish/core/auth/auth_service.dart';
+import 'package:goldfish/core/auth/repositories/user_repository.dart';
 import 'package:goldfish/core/firebase/firebase_service.dart';
 import 'package:goldfish/core/logging/app_logger.dart';
 import 'package:goldfish/core/router/app_router.dart';
@@ -40,7 +45,15 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final AppLifecycleObserver _lifecycleObserver = AppLifecycleObserver();
-  late final AuthNotifier _authNotifier = AuthNotifier();
+  late final AuthNotifier _authNotifier = AuthNotifier(
+    authService: AuthService(
+      firebaseAuth: firebase_auth.FirebaseAuth.instance,
+      googleSignIn: GoogleSignIn(signInOption: SignInOption.standard),
+      userRepository: UserRepository(
+        firestore: FirebaseFirestore.instance,
+      ),
+    ),
+  );
   late final AppRouter _router = AppRouter(authNotifier: _authNotifier);
 
   @override
