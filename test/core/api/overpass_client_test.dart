@@ -151,6 +151,30 @@ void main() {
         );
       });
 
+      test('throws OverpassException on 400 Bad Request with response body in error', () async {
+        // Arrange: Simulate a 400 error with HTML error response (like Overpass API returns)
+        const errorBody = '''<p>The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.</p>
+
+<p><strong style="color:#FF0000">Error</strong>: line 1: parse error: ';' expected - ')' found. </p>''';
+
+        final mockOverpassClient = createMockOverpassClient(
+          response: http.Response(errorBody, 400),
+        );
+
+        // Act & Assert
+        expect(
+          () => mockOverpassClient.findNearbyPlaces(45.0, -90.0),
+          throwsA(
+            predicate<OverpassException>(
+              (e) =>
+                  e.statusCode == 400 &&
+                  e.message.contains('400') &&
+                  e.message.contains(errorBody),
+            ),
+          ),
+        );
+      });
+
       test('throws OverpassException on empty response', () async {
         // Arrange
         final mockOverpassClient = createMockOverpassClient(
@@ -283,6 +307,13 @@ void main() {
         expect(query, contains('amenity'));
         expect(query, contains('tourism'));
         expect(query, contains('shop'));
+
+        // Verify query format matches VCR cassette format (with newlines and proper structure)
+        expect(query, contains('\n'));
+        expect(query, contains('(\n'));
+        expect(query, contains(');\n'));
+        // Verify no double closing parentheses (the bug we fixed)
+        expect(query.split('))'), hasLength(1), reason: 'Query should not have double closing parentheses');
       });
     });
   });

@@ -37,6 +37,17 @@ abstract class LocationService {
   ///
   /// Returns `true` if location services are enabled, `false` otherwise.
   Future<bool> isLocationServiceEnabled();
+
+  /// Checks if location permission is denied forever.
+  ///
+  /// Returns `true` if permission is denied forever (user must grant via settings),
+  /// `false` otherwise.
+  Future<bool> isPermissionDeniedForever();
+
+  /// Opens the app settings page where the user can grant location permission.
+  ///
+  /// Returns `true` if the settings page was opened successfully, `false` otherwise.
+  Future<bool> openAppSettings();
 }
 
 /// Concrete implementation of [LocationService] using the geolocator package.
@@ -232,6 +243,47 @@ class GeolocatorLocationService implements LocationService {
     } catch (e) {
       AppLogger.error({
         'event': 'location_service_enabled_check_error',
+        'error': e.toString(),
+      });
+      // Don't throw - return false gracefully
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> isPermissionDeniedForever() async {
+    try {
+      final permission = await _geolocatorWrapper.checkPermission();
+      final deniedForever = permission == LocationPermission.deniedForever;
+
+      AppLogger.info({
+        'event': 'location_permission_denied_forever_check',
+        'denied_forever': deniedForever,
+      });
+
+      return deniedForever;
+    } catch (e) {
+      AppLogger.error({
+        'event': 'location_permission_denied_forever_check_error',
+        'error': e.toString(),
+      });
+      // Don't throw - return false gracefully
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> openAppSettings() async {
+    try {
+      final opened = await _geolocatorWrapper.openAppSettings();
+      AppLogger.info({
+        'event': 'location_open_app_settings',
+        'opened': opened,
+      });
+      return opened;
+    } catch (e) {
+      AppLogger.error({
+        'event': 'location_open_app_settings_error',
         'error': e.toString(),
       });
       // Don't throw - return false gracefully

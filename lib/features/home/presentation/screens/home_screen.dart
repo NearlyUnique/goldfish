@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:goldfish/core/auth/auth_notifier.dart';
 
 /// Home screen displaying authenticated user information.
@@ -109,6 +110,11 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push('/record-visit'),
+        tooltip: 'Record Visit',
+        child: const Icon(Icons.add),
       ),
     );
   }

@@ -153,7 +153,7 @@ class _RecordVisitScreenState extends State<RecordVisitScreen> {
                         // Divider with "OR" text
                         Row(
                           children: [
-                            Expanded(child: Divider()),
+                            const Expanded(child: Divider()),
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: Text(
@@ -163,7 +163,7 @@ class _RecordVisitScreenState extends State<RecordVisitScreen> {
                                     ),
                               ),
                             ),
-                            Expanded(child: Divider()),
+                            const Expanded(child: Divider()),
                           ],
                         ),
                         const SizedBox(height: 24),
@@ -191,7 +191,7 @@ class _RecordVisitScreenState extends State<RecordVisitScreen> {
               // Loading overlay during save
               if (_viewModel.isSaving)
                 Container(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   child: const Center(
                     child: CircularProgressIndicator(),
                   ),
@@ -305,36 +305,60 @@ class _LocationStatusSection extends StatelessWidget {
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              Icons.location_off,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Location unavailable',
-                    style: Theme.of(context).textTheme.bodyMedium,
+            Row(
+              children: [
+                Icon(
+                  Icons.location_off,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Location unavailable',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      if (viewModel.error != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          viewModel.error!,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ],
                   ),
-                  if (viewModel.error != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      viewModel.error!,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ],
-                ],
-              ),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: viewModel.refreshLocation,
-              child: const Text('Retry'),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (viewModel.isPermissionDeniedForever) ...[
+                  FilledButton.icon(
+                    onPressed: () async {
+                      await viewModel.openAppSettings();
+                      // Refresh location after user returns from settings
+                      // (they might have granted permission)
+                      await viewModel.refreshLocation();
+                    },
+                    icon: const Icon(Icons.settings, size: 18),
+                    label: const Text('Open Settings'),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                TextButton(
+                  onPressed: viewModel.refreshLocation,
+                  child: const Text('Retry'),
+                ),
+              ],
             ),
           ],
         ),

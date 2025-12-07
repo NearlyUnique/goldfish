@@ -1,0 +1,407 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.8 e802775f",
+  "osm3s": {
+    "timestamp_osm_base": "2025-12-07T16:46:00Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 324660927,
+  "lat": 53.4787806,
+  "lon": -2.2491324,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:housename": "Onward Buildings",
+    "addr:housenumber": "205",
+    "addr:postcode": "M3 3NW",
+    "addr:street": "Deansgate",
+    "amenity": "restaurant",
+    "cuisine": "turkish;burger;pizza;kebab",
+    "fhrs:id": "1818931",
+    "indoor_seating": "yes",
+    "name": "Topkapi Palace",
+    "outdoor_seating": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 324690893,
+  "lat": 53.4786625,
+  "lon": -2.2495294,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:country": "GB",
+    "addr:housenumber": "194",
+    "addr:postcode": "M3 3ND",
+    "addr:street": "Deansgate",
+    "amenity": "cafe",
+    "check_date": "2024-12-21",
+    "cuisine": "coffee_shop",
+    "fhrs:id": "1820594",
+    "name": "Federal Cafe Bar",
+    "outdoor_seating": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 324691503,
+  "lat": 53.4784534,
+  "lon": -2.2496910,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:housenumber": "200-204",
+    "addr:postcode": "M3 3NN",
+    "addr:street": "Deansgate",
+    "amenity": "restaurant",
+    "branch": "Manchester",
+    "brand": "Flat Iron",
+    "brand:wikidata": "Q110680166",
+    "cuisine": "steak_house",
+    "fhrs:id": "1821659",
+    "name": "Flat Iron Manchester",
+    "opening_hours": "We-Th 12:00-22:30; Fr-Sa 12:00-23:00; Su-Tu 12:00-22:00",
+    "website": "https://flatironsteak.co.uk/restaurant/manchester"
+  }
+},
+{
+  "type": "node",
+  "id": 334648277,
+  "lat": 53.4783249,
+  "lon": -2.2492407,
+  "tags": {
+    "amenity": "post_box",
+    "collection_times": "Mo-Fr 18:30; Sa 12:00",
+    "post_box:type": "pillar",
+    "ref": "M2 180",
+    "royal_cypher": "VR",
+    "royal_cypher:wikidata": "Q33102356"
+  }
+},
+{
+  "type": "node",
+  "id": 334648390,
+  "lat": 53.4783236,
+  "lon": -2.2489523,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:country": "GB",
+    "addr:housename": "Central Buildings",
+    "addr:housenumber": "11",
+    "addr:postcode": "M2 5QR",
+    "addr:street": "Peter Street",
+    "amenity": "bar",
+    "brand": "Revolución de Cuba",
+    "brand:wikidata": "Q64024691",
+    "fhrs:id": "1816812",
+    "name": "Revolución de Cuba",
+    "opening_hours": "Mo-We 11:30-02:00; Th-Sa 11:30-03:00; Su 12:00-02:00",
+    "smoking": "outside",
+    "website": "https://www.revoluciondecuba.com/bar/manchester",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 334648541,
+  "lat": 53.4785500,
+  "lon": -2.2491648,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:housename": "Central Buildings",
+    "addr:housenumber": "2",
+    "addr:postcode": "M2 5GU",
+    "addr:street": "Bootle Street",
+    "amenity": "nightclub",
+    "name": "42nd Street"
+  }
+},
+{
+  "type": "node",
+  "id": 533807812,
+  "lat": 53.4787599,
+  "lon": -2.2492164,
+  "tags": {
+    "amenity": "taxi",
+    "name": "City Centre - Deansgate",
+    "naptan:AtcoCode": "1800NBT0161",
+    "naptan:CommonName": "City Centre - Deansgate",
+    "naptan:Indicator": "Deansgate - Bootle St",
+    "naptan:Landmark": "BOOTLE ST",
+    "naptan:PlusbusZoneRef": "MNCRPIC",
+    "naptan:Street": "Deansgate",
+    "naptan:verified": "no",
+    "source": "naptan_import"
+  }
+},
+{
+  "type": "node",
+  "id": 6459634106,
+  "lat": 53.4790523,
+  "lon": -2.2493311,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:country": "GB",
+    "addr:housenumber": "186",
+    "addr:postcode": "M3 3WB",
+    "addr:street": "Deansgate",
+    "name": "One Eight Six",
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 9192827271,
+  "lat": 53.4783535,
+  "lon": -2.2487988,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:housename": "Mines Advisory Group",
+    "addr:housenumber": "11",
+    "addr:postcode": "M2 5QR",
+    "addr:street": "Peter Street",
+    "name": "Mines Advisory Group",
+    "office": "yes",
+    "phone": "+44 161 236 4311",
+    "website": "https://www.maginternational.org/"
+  }
+},
+{
+  "type": "node",
+  "id": 9210046626,
+  "lat": 53.4785558,
+  "lon": -2.2495909,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:housenumber": "198",
+    "addr:postcode": "M3 3NE",
+    "addr:street": "Deansgate",
+    "amenity": "restaurant",
+    "brand": "Pieminister",
+    "brand:wikidata": "Q16967078",
+    "cuisine": "pie",
+    "diet:meat": "yes",
+    "diet:vegan": "yes",
+    "diet:vegetarian": "yes",
+    "fhrs:id": "1821267",
+    "name": "Pieminister",
+    "opening_hours": "Su-Th 12:00-22:00; Fr-Sa 12:00-23:00",
+    "phone": "+44 161 850 9860",
+    "website": "https://pieminister.co.uk/restaurants/deansgate/",
+    "wheelchair": "limited"
+  }
+},
+{
+  "type": "node",
+  "id": 9621350858,
+  "lat": 53.4789445,
+  "lon": -2.2490178,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:housenumber": "201",
+    "addr:postcode": "M3 3NW",
+    "addr:street": "Deansgate",
+    "office": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9621350868,
+  "lat": 53.4787294,
+  "lon": -2.2491655,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:housename": "Onward Buildings",
+    "addr:housenumber": "207",
+    "addr:postcode": "M3 3NW",
+    "addr:street": "Deansgate",
+    "office": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9621350869,
+  "lat": 53.4786672,
+  "lon": -2.2492041,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:housename": "Onward Buildings",
+    "addr:housenumber": "209",
+    "addr:postcode": "M3 3NW",
+    "addr:street": "Deansgate",
+    "shop": "vacant"
+  }
+},
+{
+  "type": "node",
+  "id": 9621350870,
+  "lat": 53.4786237,
+  "lon": -2.2488615,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:housenumber": "11-13",
+    "addr:postcode": "M2 5GU",
+    "addr:street": "Bootle Street",
+    "amenity": "fast_food",
+    "cuisine": "turkish;burger;chicken;pizza",
+    "fhrs:id": "1820961",
+    "name": "Topkapi Takeaway & Cafe",
+    "takeaway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9621350895,
+  "lat": 53.4783765,
+  "lon": -2.2492933,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:housename": "Central Buildings",
+    "addr:housenumber": "1",
+    "addr:postcode": "M2 5QR",
+    "addr:street": "Peter Street",
+    "amenity": "bar",
+    "fhrs:id": "1819712",
+    "name": "Dirty Martini"
+  }
+},
+{
+  "type": "node",
+  "id": 9651353075,
+  "lat": 53.4789712,
+  "lon": -2.2493758,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:housenumber": "186",
+    "addr:postcode": "M3 3WB",
+    "addr:street": "Deansgate",
+    "amenity": "restaurant",
+    "brand": "Hawksmoor",
+    "brand:wikidata": "Q17500669",
+    "cuisine": "steak_house",
+    "name": "Hawksmoor"
+  }
+},
+{
+  "type": "node",
+  "id": 9651353076,
+  "lat": 53.4788470,
+  "lon": -2.2494450,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:housenumber": "188-192",
+    "addr:postcode": "M3 3ND",
+    "addr:street": "Deansgate",
+    "amenity": "bar",
+    "check_date": "2024-12-21",
+    "fhrs:id": "1820132",
+    "name": "Manahatta"
+  }
+},
+{
+  "type": "node",
+  "id": 9651353077,
+  "lat": 53.4786231,
+  "lon": -2.2495576,
+  "tags": {
+    "addr:city": "Manchester",
+    "addr:housenumber": "196",
+    "addr:postcode": "M3 3WF",
+    "addr:street": "Deansgate",
+    "office": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 184507812,
+  "center": {
+    "lat": 53.4788853,
+    "lon": -2.2492341
+  },
+  "tags": {
+    "cycleway:left": "lane",
+    "cycleway:right": "track",
+    "highway": "tertiary",
+    "historic": "roman_road",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "20 mph",
+    "name": "Deansgate",
+    "old_name": "Via Militaris Antonines",
+    "oneway": "yes",
+    "oneway:bicycle": "no",
+    "ref": "A56",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "tfgmcitycentre": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 956949156,
+  "center": {
+    "lat": 53.4778962,
+    "lon": -2.2498091
+  },
+  "tags": {
+    "cycleway:both": "no",
+    "highway": "tertiary",
+    "historic": "roman_road",
+    "lanes": "2",
+    "lit": "yes",
+    "maxspeed": "20 mph",
+    "name": "Deansgate",
+    "old_name": "Via Militaris Antonines",
+    "oneway": "yes",
+    "ref": "A56",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "tfgmcitycentre": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1220701556,
+  "center": {
+    "lat": 53.4784748,
+    "lon": -2.2494710
+  },
+  "tags": {
+    "cycleway:left": "no",
+    "cycleway:right": "separate",
+    "highway": "tertiary",
+    "historic": "roman_road",
+    "lanes": "2",
+    "lit": "yes",
+    "maxspeed": "20 mph",
+    "name": "Deansgate",
+    "old_name": "Via Militaris Antonines",
+    "oneway": "yes",
+    "oneway:bicycle": "no",
+    "ref": "A56",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "tfgmcitycentre": "yes"
+  }
+},
+{
+  "type": "relation",
+  "id": 7067453,
+  "center": {
+    "lat": 53.5736459,
+    "lon": -1.9754629
+  },
+  "tags": {
+    "historic": "roman_road",
+    "historic:civilization": "ancient_roman",
+    "name": "Watling Street Iter II",
+    "route": "historic",
+    "source": "OS_OpenData_StreetView",
+    "type": "route"
+  }
+}
+
+  ]
+}

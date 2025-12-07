@@ -27,10 +27,10 @@ class RecordVisitViewModel extends ChangeNotifier {
     required OverpassClient overpassClient,
     required VisitRepository visitRepository,
     required AuthNotifier authNotifier,
-  })  : _locationService = locationService,
-        _overpassClient = overpassClient,
-        _visitRepository = visitRepository,
-        _authNotifier = authNotifier;
+  }) : _locationService = locationService,
+       _overpassClient = overpassClient,
+       _visitRepository = visitRepository,
+       _authNotifier = authNotifier;
 
   final LocationService _locationService;
   final OverpassClient _overpassClient;
@@ -45,6 +45,7 @@ class RecordVisitViewModel extends ChangeNotifier {
   bool _isLoadingSuggestions = false;
   bool _isSaving = false;
   String? _error;
+  bool _isPermissionDeniedForever = false;
 
   /// The current GPS location, or `null` if not available.
   Position? get currentLocation => _currentLocation;
@@ -70,6 +71,9 @@ class RecordVisitViewModel extends ChangeNotifier {
   /// The current error message, or `null` if no error.
   String? get error => _error;
 
+  /// Whether location permission is denied forever (requires opening app settings).
+  bool get isPermissionDeniedForever => _isPermissionDeniedForever;
+
   /// Whether the form is valid and can be saved.
   ///
   /// Requires:
@@ -90,19 +94,54 @@ class RecordVisitViewModel extends ChangeNotifier {
 
   /// Refreshes the current location and updates place suggestions.
   ///
-  /// Requests permission if needed, gets GPS location, and queries Overpass
-  /// API for nearby places. Handles errors gracefully.
+  /// Checks location services, requests permission if needed, gets GPS location,
+  /// and queries Overpass API for nearby places. Handles errors gracefully.
   Future<void> refreshLocation() async {
     _setError(null);
     _setLoadingLocation(true);
+    _setPermissionDeniedForever(false);
 
     try {
-      // Request permission if needed
+      // Check if location services are enabled first
+      final serviceEnabled = await _locationService.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        _setError(
+          'Location services are disabled. Please enable location services in your device settings. You can still enter a place name manually.',
+        );
+        _setLoadingLocation(false);
+        return;
+      }
+
+      // Check if permission is denied forever first
+      final deniedForever = await _locationService.isPermissionDeniedForever();
+      if (deniedForever) {
+        _setPermissionDeniedForever(true);
+        _setError(
+          'Location permission was denied. Please enable it in app settings. You can still enter a place name manually.',
+        );
+        _setLoadingLocation(false);
+        return;
+      }
+
+      // Check current permission status and request if needed
       final hasPermission = await _locationService.hasPermission();
       if (!hasPermission) {
+        // Request permission - this will show the system permission dialog
         final granted = await _locationService.requestPermission();
         if (!granted) {
-          _setError('Location permission denied. You can still enter a place name manually.');
+          // Check again if it's now denied forever
+          final nowDeniedForever = await _locationService
+              .isPermissionDeniedForever();
+          if (nowDeniedForever) {
+            _setPermissionDeniedForever(true);
+            _setError(
+              'Location permission was denied. Please enable it in app settings. You can still enter a place name manually.',
+            );
+          } else {
+            _setError(
+              'Location permission is required to get your current location. You can still enter a place name manually.',
+            );
+          }
           _setLoadingLocation(false);
           return;
         }
@@ -111,7 +150,9 @@ class RecordVisitViewModel extends ChangeNotifier {
       // Get current location
       final position = await _locationService.getCurrentLocation();
       if (position == null) {
-        _setError('Location unavailable. You can still enter a place name manually.');
+        _setError(
+          'Location unavailable. You can still enter a place name manually.',
+        );
         _setLoadingLocation(false);
         return;
       }
@@ -128,6 +169,20 @@ class RecordVisitViewModel extends ChangeNotifier {
       });
       _setError('Failed to get location: ${e.toString()}');
       _setLoadingLocation(false);
+    }
+  }
+
+  /// Opens the app settings page where the user can grant location permission.
+  ///
+  /// This should be called when permission is denied forever.
+  Future<void> openAppSettings() async {
+    try {
+      await _locationService.openAppSettings();
+    } catch (e) {
+      AppLogger.error({
+        'event': 'record_visit_open_app_settings_error',
+        'error': e.toString(),
+      });
     }
   }
 
@@ -194,8 +249,7 @@ class RecordVisitViewModel extends ChangeNotifier {
     _placeName = name;
 
     // Clear selected suggestion if name doesn't match
-    if (_selectedSuggestion != null &&
-        _selectedSuggestion!.name != name) {
+    if (_selectedSuggestion != null && _selectedSuggestion!.name != name) {
       _selectedSuggestion = null;
     }
 
@@ -286,10 +340,7 @@ class RecordVisitViewModel extends ChangeNotifier {
       if (suggestion.amenityType != null) {
         final parts = suggestion.amenityType!.split(':');
         if (parts.length == 2) {
-          placeType = LocationType(
-            type: parts[0],
-            subType: parts[1],
-          );
+          placeType = LocationType(type: parts[0], subType: parts[1]);
         }
       }
 
@@ -385,5 +436,9 @@ class RecordVisitViewModel extends ChangeNotifier {
     _error = error;
     notifyListeners();
   }
-}
 
+  void _setPermissionDeniedForever(bool deniedForever) {
+    _isPermissionDeniedForever = deniedForever;
+    notifyListeners();
+  }
+}

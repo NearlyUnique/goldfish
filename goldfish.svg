@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Goldfish on map icon">
+    <!-- Palette:
+       gold:   #F4A300
+       orange: #D97A00
+       dark:   #6B3A00
+       water:  #DFF4FF
+       land:   #E4F7D8
+  -->
+    <rect width="256" height="256" rx="32" fill="#DFF4FF"/>
+
+    <!-- Simple map: two abstract land shapes -->
+    <g transform="translate(12,28)">
+        <path d="M18 80 C40 40, 110 20, 160 52 C200 76, 220 120, 164 128 C120 134, 60 114, 18 80 Z" fill="#E4F7D8" stroke="#BFDFA8" stroke-width="1"/>
+        <path d="M46 148 C72 120, 140 110, 188 140 C210 156, 190 188, 146 176 C110 166, 68 160, 46 148 Z" fill="#E4F7D8" stroke="#BFDFA8" stroke-width="1"/>
+        <!-- Route line -->
+        <path d="M36 68 C72 50, 120 48, 160 68" fill="none" stroke="#6B3A00" stroke-width="3" stroke-dasharray="6 6" stroke-linecap="round"/>
+        <circle cx="36" cy="68" r="4" fill="#6B3A00"/>
+        <circle cx="160" cy="68" r="4" fill="#6B3A00"/>
+    </g>
+
+    <!-- Goldfish (simple, icon-friendly) -->
+    <g transform="translate(56,72) scale(0.9)">
+        <!-- body -->
+        <ellipse cx="120" cy="80" rx="44" ry="28" fill="#F4A300" stroke="#D97A00" stroke-width="2"/>
+        <!-- tail -->
+        <path d="M76 82 C48 72, 24 86, 24 106 C36 98, 56 106, 76 96 Z" fill="#F4A300" stroke="#D97A00" stroke-width="2"/>
+        <!-- top fin -->
+        <path d="M100 60 C112 44, 136 46, 148 60 C130 56, 118 62, 100 60 Z" fill="#F4A300" stroke="#D97A00" stroke-width="2"/>
+        <!-- lower fin -->
+        <path d="M110 98 C112 110, 132 114, 138 104 C128 106, 120 102, 110 98 Z" fill="#F4A300" stroke="#D97A00" stroke-width="2"/>
+        <!-- eye -->
+        <circle cx="140" cy="76" r="6" fill="#FFF"/>
+        <circle cx="140" cy="76" r="3" fill="#6B3A00"/>
+        <!-- minimal scale marks -->
+        <path d="M98 74 C90 78, 82 78, 74 74" fill="none" stroke="#D97A00" stroke-width="2" stroke-linecap="round"/>
+    </g>
+</svg>

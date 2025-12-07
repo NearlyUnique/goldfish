@@ -62,18 +62,21 @@ void setupLocationServiceWithPermission(
   FakeLocationService locationService,
   Position position,
 ) {
+  locationService.onIsLocationServiceEnabled = () async => true;
   locationService.onHasPermission = () async => true;
   locationService.onGetCurrentLocation = () async => position;
 }
 
 /// Sets up location service to deny permission.
 void setupLocationServicePermissionDenied(FakeLocationService locationService) {
+  locationService.onIsLocationServiceEnabled = () async => true;
   locationService.onHasPermission = () async => false;
   locationService.onRequestPermission = () async => false;
 }
 
 /// Sets up location service to return null location.
 void setupLocationServiceUnavailable(FakeLocationService locationService) {
+  locationService.onIsLocationServiceEnabled = () async => true;
   locationService.onHasPermission = () async => true;
   locationService.onGetCurrentLocation = () async => null;
 }

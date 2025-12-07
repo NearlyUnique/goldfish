@@ -30,6 +30,7 @@ void main() {
 
     testWidgets('displays loading state when loading suggestions', (tester) async {
       // Set up location service to return a position quickly
+      fakeLocationService.onIsLocationServiceEnabled = () async => true;
       fakeLocationService.onHasPermission = () async => true;
       fakeLocationService.onGetCurrentLocation = () async =>
           createExampleTestPosition();
@@ -77,6 +78,7 @@ void main() {
     testWidgets('displays error state when error exists and no suggestions',
         (tester) async {
       // Set up location service to deny permission, which will set an error
+      fakeLocationService.onIsLocationServiceEnabled = () async => true;
       fakeLocationService.onHasPermission = () async => false;
       fakeLocationService.onRequestPermission = () async => false;
 
@@ -104,6 +106,7 @@ void main() {
     testWidgets('displays empty state when no suggestions', (tester) async {
       // Set up location service to return a position, but Overpass will return empty
       // (default mock client returns empty)
+      fakeLocationService.onIsLocationServiceEnabled = () async => true;
       fakeLocationService.onHasPermission = () async => true;
       fakeLocationService.onGetCurrentLocation = () async =>
           createExampleTestPosition();
@@ -135,6 +138,7 @@ void main() {
 
     testWidgets('displays list of suggestions', (tester) async {
       // Set up location service
+      fakeLocationService.onIsLocationServiceEnabled = () async => true;
       fakeLocationService.onHasPermission = () async => true;
       fakeLocationService.onGetCurrentLocation = () async =>
           createExampleTestPosition();
@@ -202,6 +206,7 @@ void main() {
 
     testWidgets('highlights selected suggestion', (tester) async {
       // Set up location service
+      fakeLocationService.onIsLocationServiceEnabled = () async => true;
       fakeLocationService.onHasPermission = () async => true;
       fakeLocationService.onGetCurrentLocation = () async =>
           createExampleTestPosition();
@@ -269,6 +274,7 @@ void main() {
     testWidgets('calls selectSuggestion when suggestion is tapped',
         (tester) async {
       // Set up location service
+      fakeLocationService.onIsLocationServiceEnabled = () async => true;
       fakeLocationService.onHasPermission = () async => true;
       fakeLocationService.onGetCurrentLocation = () async =>
           createExampleTestPosition();
@@ -327,6 +333,7 @@ void main() {
 
     testWidgets('displays amenity type chip when available', (tester) async {
       // Set up location service
+      fakeLocationService.onIsLocationServiceEnabled = () async => true;
       fakeLocationService.onHasPermission = () async => true;
       fakeLocationService.onGetCurrentLocation = () async =>
           createExampleTestPosition();
@@ -379,6 +386,7 @@ void main() {
 
     testWidgets('displays address when available', (tester) async {
       // Set up location service
+      fakeLocationService.onIsLocationServiceEnabled = () async => true;
       fakeLocationService.onHasPermission = () async => true;
       fakeLocationService.onGetCurrentLocation = () async =>
           createExampleTestPosition();
@@ -450,6 +458,7 @@ void main() {
       );
 
       // Set up location and mock client with suggestions
+      fakeLocationService.onIsLocationServiceEnabled = () async => true;
       fakeLocationService.onHasPermission = () async => true;
       fakeLocationService.onGetCurrentLocation = () async =>
           createExampleTestPosition();

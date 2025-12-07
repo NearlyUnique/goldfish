@@ -69,11 +69,12 @@ class OverpassClient {
         AppLogger.error({
           'event': 'overpass_api_error',
           'status_code': response.statusCode,
+          'response_body': response.body,
           'latitude': latitude,
           'longitude': longitude,
         });
         throw OverpassException(
-          'Overpass API returned status ${response.statusCode}',
+          'Overpass API returned status ${response.statusCode}: ${response.body}',
           response.statusCode,
         );
       }
@@ -159,11 +160,17 @@ class OverpassClient {
     // Filters by common place tags: amenity, tourism, historic, leisure,
     // shop, craft, office, public_transport
     // Note: The regex pattern uses ~ operator to match tag keys
-    final subQuery =
-        'around:$radius,$lat,$lon)[~"^(amenity|tourism|historic|leisure|shop|craft|office|public_transport)\$"~"."]';
+    final filter =
+        '[~"^(amenity|tourism|historic|leisure|shop|craft|office|public_transport)\$"~"."]';
     final query =
-        '[out:json][timeout:25];(node($subQuery);way($subQuery);relation($subQuery));out center tags;';
+        '''[out:json][timeout:25];
+(
+  node(around:$radius,$lat,$lon)$filter;
+  way(around:$radius,$lat,$lon)$filter;
+  relation(around:$radius,$lat,$lon)$filter;
+);
+out center tags;''';
 
-    return query.trim();
+    return query;
   }
 }

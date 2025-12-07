@@ -18,6 +18,11 @@ abstract class GeolocatorWrapper {
 
   /// Checks if location services are enabled on the device.
   Future<bool> isLocationServiceEnabled();
+
+  /// Opens the app settings page where the user can grant location permission.
+  ///
+  /// Returns `true` if the settings page was opened successfully, `false` otherwise.
+  Future<bool> openAppSettings();
 }
 
 /// Concrete implementation of [GeolocatorWrapper] using the geolocator package.
@@ -43,5 +48,10 @@ class GeolocatorPackageWrapper implements GeolocatorWrapper {
   @override
   Future<bool> isLocationServiceEnabled() {
     return Geolocator.isLocationServiceEnabled();
+  }
+
+  @override
+  Future<bool> openAppSettings() {
+    return Geolocator.openAppSettings();
   }
 }

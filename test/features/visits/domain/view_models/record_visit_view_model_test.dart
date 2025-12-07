@@ -278,7 +278,7 @@ void main() {
         await viewModel.refreshLocation();
 
         // Assert
-        expect(viewModel.error, contains('permission denied'));
+        expect(viewModel.error, contains('permission'));
       });
 
       test('sets currentLocation to null when location unavailable', () async {

@@ -31,7 +31,7 @@ class AppLogger {
   static void error(Map<String, dynamic> data) {
     final message = _formatKeyValuePairs(data);
     developer.log(
-      message,
+      '❌ [ERROR] $message',
       name: _logName,
       level: 1000, // ERROR level
     );

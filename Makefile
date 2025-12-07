@@ -34,7 +34,7 @@ help: ## Show this help message
 # Build target - only rebuilds if sources changed or APK doesn't exist
 $(APK_PATH): $(PUBSPEC) $(SOURCE_FILES) $(ANDROID_DIR)
 	@echo "Building release APK..."
-	@flutter build apk --release
+	@BROWSER=/bin/true flutter build apk --release
 	@echo "APK built at: $(APK_PATH)"
 
 build: $(APK_PATH) ## Build release APK
@@ -70,6 +70,17 @@ em_launch: ## Launch the emulator
 em_run: ## Run app on emulator (builds and installs automatically)
 	@echo "Running app on emulator..."
 	@flutter run
+
+em_set_location: ## Set emulator location via Extended Controls (see help for manual method)
+	@echo "To set emulator location:"
+	@echo "  1. Click '...' (three dots) in emulator toolbar"
+	@echo "  2. Go to 'Location' tab"
+	@echo "  3. Enter latitude and longitude"
+	@echo "  4. Click 'Send'"
+	@echo ""
+	@echo "Or use adb command:"
+	@echo "  adb emu geo fix <longitude> <latitude>"
+	@echo "  Example: adb emu geo fix 0.1390 52.1993"
 
 clean: ## Clean build artifacts
 	@echo "Cleaning build artifacts..."

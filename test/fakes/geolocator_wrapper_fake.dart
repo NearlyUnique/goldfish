@@ -9,18 +9,21 @@ class FakeGeolocatorWrapper implements GeolocatorWrapper {
     Future<Position> Function({LocationSettings? locationSettings})?
         onGetCurrentPosition,
     Future<bool> Function()? onIsLocationServiceEnabled,
+    Future<bool> Function()? onOpenAppSettings,
   })  : onCheckPermission = onCheckPermission ?? _defaultCheckPermission,
         onRequestPermission = onRequestPermission ?? _defaultRequestPermission,
         onGetCurrentPosition =
             onGetCurrentPosition ?? _defaultGetCurrentPosition,
         onIsLocationServiceEnabled =
-            onIsLocationServiceEnabled ?? _defaultIsLocationServiceEnabled;
+            onIsLocationServiceEnabled ?? _defaultIsLocationServiceEnabled,
+        onOpenAppSettings = onOpenAppSettings ?? _defaultOpenAppSettings;
 
   Future<LocationPermission> Function() onCheckPermission;
   Future<LocationPermission> Function() onRequestPermission;
   Future<Position> Function({LocationSettings? locationSettings})
       onGetCurrentPosition;
   Future<bool> Function() onIsLocationServiceEnabled;
+  Future<bool> Function() onOpenAppSettings;
 
   @override
   Future<LocationPermission> checkPermission() => onCheckPermission();
@@ -34,6 +37,9 @@ class FakeGeolocatorWrapper implements GeolocatorWrapper {
 
   @override
   Future<bool> isLocationServiceEnabled() => onIsLocationServiceEnabled();
+
+  @override
+  Future<bool> openAppSettings() => onOpenAppSettings();
 
   static Future<LocationPermission> _defaultCheckPermission() async =>
       LocationPermission.denied;
@@ -58,6 +64,8 @@ class FakeGeolocatorWrapper implements GeolocatorWrapper {
       );
 
   static Future<bool> _defaultIsLocationServiceEnabled() async => false;
+
+  static Future<bool> _defaultOpenAppSettings() async => true;
 }
 
 
