@@ -1,16 +1,86 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:goldfish/core/auth/auth_notifier.dart';
+import 'package:goldfish/core/data/models/visit_model.dart';
+import 'package:goldfish/core/data/repositories/visit_repository.dart';
+import 'package:goldfish/core/data/visit_exceptions.dart';
+import 'package:goldfish/core/logging/app_logger.dart';
 
-/// Home screen displaying authenticated user information.
+/// Home screen displaying authenticated user's visits.
 ///
-/// Shows user profile and provides sign-out functionality.
-class HomeScreen extends StatelessWidget {
+/// Shows a list of recorded visits with pull-to-refresh functionality.
+class HomeScreen extends StatefulWidget {
   /// Creates a new [HomeScreen].
-  const HomeScreen({super.key, required this.authNotifier});
+  const HomeScreen({
+    super.key,
+    required this.authNotifier,
+    VisitRepository? visitRepository,
+  }) : _visitRepository = visitRepository;
 
   /// The authentication notifier for managing auth state.
   final AuthNotifier authNotifier;
+
+  /// The visit repository for fetching visits.
+  ///
+  /// If not provided, creates a default [VisitRepository] instance.
+  final VisitRepository? _visitRepository;
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late final VisitRepository _visitRepository;
+  List<Visit> _visits = [];
+  bool _isLoading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _visitRepository = widget._visitRepository ?? VisitRepository();
+    _loadVisits();
+  }
+
+  Future<void> _loadVisits() async {
+    final user = widget.authNotifier.user;
+    if (user == null) {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final visits = await _visitRepository.getUserVisits(user.uid);
+      if (mounted) {
+        setState(() {
+          _visits = visits;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      AppLogger.error({
+        'event': 'home_load_visits_error',
+        'user_id': user.uid,
+        'error': e.toString(),
+      });
+      if (mounted) {
+        setState(() {
+          _error = e is VisitDataException
+              ? e.message
+              : 'Failed to load visits. Please try again.';
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   Future<void> _handleSignOut(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -32,14 +102,170 @@ class HomeScreen extends StatelessWidget {
     );
 
     if (confirmed == true) {
-      await authNotifier.signOut();
+      await widget.authNotifier.signOut();
     }
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    // If less than 1 day ago, show relative time
+    if (difference.inDays == 0) {
+      if (difference.inHours == 0) {
+        if (difference.inMinutes == 0) {
+          return 'Just now';
+        }
+        return '${difference.inMinutes} ${difference.inMinutes == 1 ? 'minute' : 'minutes'} ago';
+      }
+      return '${difference.inHours} ${difference.inHours == 1 ? 'hour' : 'hours'} ago';
+    }
+
+    // If less than 7 days ago, show days
+    if (difference.inDays < 7) {
+      return '${difference.inDays} ${difference.inDays == 1 ? 'day' : 'days'} ago';
+    }
+
+    // Otherwise, show formatted date (e.g., "Jan 15, 2024")
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  Widget _buildVisitItem(Visit visit) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
+        title: Text(
+          visit.placeName,
+          style: textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (visit.placeType != null) ...[
+              const SizedBox(height: 8),
+              _AmenityTypeChip(
+                type: visit.placeType!.type,
+                subType: visit.placeType!.subType,
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              _formatDate(visit.addedAt),
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading && _visits.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_error != null && _visits.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _error!,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: _loadVisits,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_visits.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.place_outlined,
+                size: 64,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Nothing to remember',
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tap the + button to record your first visit',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadVisits,
+      child: ListView.builder(
+        itemCount: _visits.length,
+        itemBuilder: (context, index) => _buildVisitItem(_visits[index]),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = authNotifier.user;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Goldfish'),
@@ -51,71 +277,97 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // User profile photo or placeholder
-              CircleAvatar(
-                radius: 48,
-                backgroundImage: user?.photoURL != null
-                    ? NetworkImage(user!.photoURL!)
-                    : null,
-                child: user?.photoURL == null
-                    ? Icon(
-                        Icons.person,
-                        size: 48,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      )
-                    : null,
-              ),
-              const SizedBox(height: 24),
-              // User display name or email
-              Text(
-                user?.displayName ?? user?.email ?? 'User',
-                style: Theme.of(context).textTheme.headlineMedium,
-                textAlign: TextAlign.center,
-              ),
-              if (user?.displayName != null && user?.email != null) ...[
-                const SizedBox(height: 8),
-                Text(
-                  user!.email!,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-              const SizedBox(height: 48),
-              Icon(
-                Icons.check_circle,
-                size: 64,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Authentication Complete',
-                style: Theme.of(context).textTheme.titleLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'You are successfully signed in. '
-                'Feature implementation will begin in the next phase.',
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
+      body: _buildBody(),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/record-visit'),
         tooltip: 'Record Visit',
         child: const Icon(Icons.add),
       ),
+    );
+  }
+}
+
+/// Widget displaying an amenity type as a chip.
+class _AmenityTypeChip extends StatelessWidget {
+  const _AmenityTypeChip({required this.type, required this.subType});
+
+  final String type;
+  final String subType;
+
+  IconData _getIconForType() {
+    switch (type) {
+      case 'amenity':
+        switch (subType) {
+          case 'pub':
+          case 'bar':
+            return Icons.local_bar;
+          case 'restaurant':
+          case 'cafe':
+            return Icons.restaurant;
+          case 'hotel':
+            return Icons.hotel;
+          case 'pharmacy':
+            return Icons.local_pharmacy;
+          case 'hospital':
+            return Icons.local_hospital;
+          case 'school':
+            return Icons.school;
+          default:
+            return Icons.place;
+        }
+      case 'tourism':
+        return Icons.camera_alt;
+      case 'shop':
+        return Icons.shopping_bag;
+      case 'leisure':
+        return Icons.sports_soccer;
+      case 'historic':
+        return Icons.museum;
+      default:
+        return Icons.place;
+    }
+  }
+
+  String _formatType() {
+    // Format "key:value" to "Value" or "Key: Value"
+    final formattedValue = subType
+        .split('_')
+        .map((word) => word.isEmpty
+            ? ''
+            : word[0].toUpperCase() + word.substring(1))
+        .join(' ');
+
+    // For common keys, just show the value
+    if (type == 'amenity' || type == 'tourism' || type == 'shop') {
+      return formattedValue;
+    }
+
+    // Otherwise show "Key: Value"
+    final formattedKey = type[0].toUpperCase() + type.substring(1);
+    return '$formattedKey: $formattedValue';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Chip(
+      avatar: Icon(
+        _getIconForType(),
+        size: 18,
+        color: colorScheme.onSurfaceVariant,
+      ),
+      label: Text(
+        _formatType(),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+      ),
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
     );
   }
 }
