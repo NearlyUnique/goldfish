@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can only read/write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Visits collection: users can only access their own visits
+    match /visits/{visitId} {
+      // Allow read if the visit's user_id matches the authenticated user's UID
+      allow read: if request.auth != null &&
+                     resource.data.user_id == request.auth.uid;
+
+      // Allow create if the user_id in the request matches the authenticated user's UID
+      allow create: if request.auth != null &&
+                       request.resource.data.user_id == request.auth.uid;
+
+      // Allow update if the visit belongs to the user and user_id cannot be changed
+      allow update: if request.auth != null &&
+                       resource.data.user_id == request.auth.uid &&
+                       request.resource.data.user_id == request.auth.uid;
+
+      // Allow delete if the visit belongs to the user
+      allow delete: if request.auth != null &&
+                       resource.data.user_id == request.auth.uid;
+    }
+  }
+}
+

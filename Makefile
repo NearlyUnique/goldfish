@@ -23,7 +23,7 @@ BOOTSTRAP_TEST := test/bootstrap_test.dart
 SOURCE_FILES := $(shell find $(LIB_DIR) -name '*.dart' 2>/dev/null)
 
 # Phony targets (always execute, don't produce files)
-.PHONY: help clean em_launch em_run test_watch lint audit audit-osv audit-dep coverage_html
+.PHONY: help clean em_launch em_run test_watch lint audit audit-osv audit-dep coverage_html firebase-deploy-rules
 
 .DEFAULT_GOAL := help
 
@@ -153,5 +153,21 @@ audit-dep: $(PUBSPEC) ## Run dep_audit dependency audit
 	else \
 		echo "Error: dep_audit not found. Install with: dart pub global activate dep_audit"; \
 		echo "Make sure ~/.pub-cache/bin is in your PATH"; \
+		exit 1; \
+	fi
+
+# Firebase deployment targets
+firebase-deploy-rules: firestore.rules ## Deploy Firestore security rules to Firebase
+	@echo "Deploying Firestore security rules..."
+	@if command -v firebase >/dev/null 2>&1; then \
+		firebase deploy --only firestore:rules; \
+		echo "Firestore rules deployed successfully"; \
+	else \
+		echo "Error: Firebase CLI not found."; \
+		echo "Install with: npm install -g firebase-tools"; \
+		echo "Then run: firebase login"; \
+		echo ""; \
+		echo "Alternatively, manually copy the rules from firestore.rules"; \
+		echo "to Firebase Console > Firestore Database > Rules tab"; \
 		exit 1; \
 	fi
