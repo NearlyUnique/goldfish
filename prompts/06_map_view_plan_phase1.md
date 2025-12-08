@@ -133,7 +133,7 @@ Once complete add a ✅ to the task heading
 
 ---
 
-### Task 2: Create Map Marker Model
+### Task 2: Create Map Marker Model ✅
 **Priority**: High
 **Estimated Time**: 30 minutes
 
