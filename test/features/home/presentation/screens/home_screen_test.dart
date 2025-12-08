@@ -432,6 +432,169 @@ void main() {
       expect(placeNames, findsOneWidget);
       expect(olderPlaceNames, findsOneWidget);
     });
+
+    testWidgets('refreshes visits list when returning from record visit screen with saved visit',
+        (tester) async {
+      // Arrange
+      var callCount = 0;
+      final now = DateTime.now();
+      final initialVisits = [
+        Visit(
+          id: 'visit1',
+          userId: 'user123',
+          placeName: 'Existing Place',
+          addedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      ];
+      final updatedVisits = [
+        Visit(
+          id: 'visit1',
+          userId: 'user123',
+          placeName: 'Existing Place',
+          addedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        ),
+        Visit(
+          id: 'visit2',
+          userId: 'user123',
+          placeName: 'New Place',
+          addedAt: now.add(const Duration(seconds: 1)),
+          createdAt: now.add(const Duration(seconds: 1)),
+          updatedAt: now.add(const Duration(seconds: 1)),
+        ),
+      ];
+
+      when(() => mockVisitRepository.getUserVisits(any())).thenAnswer((_) {
+        callCount++;
+        if (callCount == 1) {
+          return Future.value(initialVisits);
+        }
+        return Future.value(updatedVisits);
+      });
+
+      // Create router with a record visit screen that returns true
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => HomeScreen(
+              authNotifier: fakeAuthNotifier,
+              visitRepository: mockVisitRepository,
+            ),
+          ),
+          GoRoute(
+            path: '/record-visit',
+            builder: (context, state) => Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => context.pop(true),
+                  child: const Text('Save and Return'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp.router(routerConfig: router),
+      );
+      await tester.pumpAndSettle();
+
+      // Assert - initial load
+      expect(find.text('Existing Place'), findsOneWidget);
+      expect(find.text('New Place'), findsNothing);
+      expect(callCount, equals(1));
+
+      // Act - navigate to record visit screen
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // Assert - on record visit screen
+      expect(find.text('Save and Return'), findsOneWidget);
+
+      // Act - simulate saving and returning
+      await tester.tap(find.text('Save and Return'));
+      await tester.pumpAndSettle();
+
+      // Assert - should have refreshed and show new visit
+      expect(callCount, equals(2));
+      expect(find.text('Existing Place'), findsOneWidget);
+      expect(find.text('New Place'), findsOneWidget);
+    });
+
+    testWidgets('does not refresh visits list when returning from record visit screen without saving',
+        (tester) async {
+      // Arrange
+      var callCount = 0;
+      final now = DateTime.now();
+      final visits = [
+        Visit(
+          id: 'visit1',
+          userId: 'user123',
+          placeName: 'Existing Place',
+          addedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      ];
+
+      when(() => mockVisitRepository.getUserVisits(any())).thenAnswer((_) {
+        callCount++;
+        return Future.value(visits);
+      });
+
+      // Create router with a record visit screen that returns false
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => HomeScreen(
+              authNotifier: fakeAuthNotifier,
+              visitRepository: mockVisitRepository,
+            ),
+          ),
+          GoRoute(
+            path: '/record-visit',
+            builder: (context, state) => Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => context.pop(false),
+                  child: const Text('Cancel'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp.router(routerConfig: router),
+      );
+      await tester.pumpAndSettle();
+
+      // Assert - initial load
+      expect(find.text('Existing Place'), findsOneWidget);
+      expect(callCount, equals(1));
+
+      // Act - navigate to record visit screen
+      await tester.tap(find.byType(FloatingActionButton));
+      await tester.pumpAndSettle();
+
+      // Assert - on record visit screen
+      expect(find.text('Cancel'), findsOneWidget);
+
+      // Act - cancel and return
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // Assert - should not have refreshed
+      expect(callCount, equals(1));
+      expect(find.text('Existing Place'), findsOneWidget);
+    });
   });
 }
 

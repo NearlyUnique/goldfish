@@ -102,7 +102,7 @@ class _RecordVisitScreenState extends State<RecordVisitScreen> {
             duration: Duration(seconds: 2),
           ),
         );
-        context.pop();
+        context.pop(true); // Return true to indicate visit was saved
       }
     } catch (e) {
       if (mounted) {

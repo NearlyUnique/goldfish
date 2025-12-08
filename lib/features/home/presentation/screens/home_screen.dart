@@ -278,7 +278,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: _buildBody(),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/record-visit'),
+        onPressed: () async {
+          final bool? result = await context.push('/record-visit');
+          // Refresh visits if a visit was saved (result is true)
+          if (result ?? false) {
+            _loadVisits();
+          }
+        },
         tooltip: 'Record Visit',
         child: const Icon(Icons.add),
       ),
