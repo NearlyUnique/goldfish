@@ -169,7 +169,7 @@ class MapMarker {
 
 ---
 
-### Task 3: Create OSM Attribution Widget
+### Task 3: Create OSM Attribution Widget ✅
 **Priority**: High
 **Estimated Time**: 30 minutes
 
