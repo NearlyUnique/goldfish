@@ -107,11 +107,15 @@ test/
 4. **MapViewWidget** displays map with markers
 5. User toggles between list/map view
 
+### Task completion
+
+Once complete add a ✅ to the task heading
+
 ---
 
 ## Implementation Tasks
 
-### Task 1: Add Dependencies
+### Task 1: Add Dependencies ✅
 **Priority**: Critical
 **Estimated Time**: 15 minutes
 

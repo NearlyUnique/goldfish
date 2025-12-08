@@ -48,6 +48,10 @@ dependencies:
     geolocator: ^14.0.2
     http: ^1.6.0
 
+    # Map
+    flutter_map: ^6.1.0
+    flutter_cache_manager: ^3.4.1
+
 dev_dependencies:
     flutter_test:
         sdk: flutter
