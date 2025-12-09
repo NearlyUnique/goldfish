@@ -693,6 +693,7 @@ void main() {
       ).thenAnswer((_) async => <Visit>[]);
       var hasPermissionCalled = false;
       var requestPermissionCalled = false;
+      fakeLocationService.onIsLocationServiceEnabled = () async => true;
       fakeLocationService.onHasPermission = () async {
         hasPermissionCalled = true;
         return false;
@@ -733,6 +734,7 @@ void main() {
         when(
           () => mockVisitRepository.getUserVisits(any()),
         ).thenAnswer((_) async => <Visit>[]);
+        fakeLocationService.onIsLocationServiceEnabled = () async => true;
         fakeLocationService.onHasPermission = () async => false;
         fakeLocationService.onRequestPermission = () async => false;
         fakeLocationService.onIsPermissionDeniedForever = () async => false;
@@ -760,6 +762,7 @@ void main() {
       when(
         () => mockVisitRepository.getUserVisits(any()),
       ).thenAnswer((_) async => <Visit>[]);
+      fakeLocationService.onIsLocationServiceEnabled = () async => true;
       fakeLocationService.onHasPermission = () async => false;
       fakeLocationService.onRequestPermission = () async => false;
       fakeLocationService.onIsPermissionDeniedForever = () async => true;
@@ -774,6 +777,7 @@ void main() {
       // Assert - map view shows settings message
       expect(find.byType(MapViewWidget), findsOneWidget);
       expect(find.textContaining('Tap to enable in settings'), findsOneWidget);
+      expect(find.text('Open Settings'), findsOneWidget);
     });
 
     testWidgets('preserves visits when toggling between list and map views', (
@@ -871,6 +875,103 @@ void main() {
       );
       expect(mapViewWidget.visits, hasLength(1));
       expect(mapViewWidget.visits.first.id, 'visit1');
+    });
+
+    testWidgets(
+      'shows location services disabled error when services are disabled',
+      (tester) async {
+        // Arrange
+        when(
+          () => mockVisitRepository.getUserVisits(any()),
+        ).thenAnswer((_) async => <Visit>[]);
+        fakeLocationService.onIsLocationServiceEnabled = () async => false;
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        // Act - switch to map view
+        await tester.tap(find.text('Map'));
+        await tester.pumpAndSettle();
+
+        // Assert - map view shows location services disabled message
+        expect(find.byType(MapViewWidget), findsOneWidget);
+        expect(
+          find.text('Please enable location services in device settings.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'shows location unavailable message when location cannot be retrieved',
+      (tester) async {
+        // Arrange
+        final now = DateTime.now();
+        final visit = Visit(
+          id: 'visit1',
+          userId: 'user123',
+          placeName: 'Test Place',
+          gpsKnown: const GeoLatLong(lat: 51.5074, long: -0.1278),
+          addedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        );
+        when(
+          () => mockVisitRepository.getUserVisits(any()),
+        ).thenAnswer((_) async => [visit]);
+        fakeLocationService.onIsLocationServiceEnabled = () async => true;
+        fakeLocationService.onHasPermission = () async => true;
+        fakeLocationService.onGetCurrentLocation = () async => null;
+
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        // Act - switch to map view
+        await tester.tap(find.text('Map'));
+        await tester.pumpAndSettle();
+
+        // Assert - map view shows location unavailable message but still displays map
+        expect(find.byType(MapViewWidget), findsOneWidget);
+        expect(
+          find.text('Unable to get current location. Showing visited places.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('opens app settings when open settings button is tapped', (
+      tester,
+    ) async {
+      // Arrange
+      var settingsOpened = false;
+      when(
+        () => mockVisitRepository.getUserVisits(any()),
+      ).thenAnswer((_) async => <Visit>[]);
+      fakeLocationService.onIsLocationServiceEnabled = () async => true;
+      fakeLocationService.onHasPermission = () async => false;
+      fakeLocationService.onRequestPermission = () async => false;
+      fakeLocationService.onIsPermissionDeniedForever = () async => true;
+      fakeLocationService.onOpenAppSettings = () async {
+        settingsOpened = true;
+        return true;
+      };
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      // Act - switch to map view
+      await tester.tap(find.text('Map'));
+      await tester.pumpAndSettle();
+
+      // Assert - open settings button is shown
+      expect(find.text('Open Settings'), findsOneWidget);
+
+      // Act - tap open settings
+      await tester.tap(find.text('Open Settings'));
+      await tester.pumpAndSettle();
+
+      // Assert - settings were opened
+      expect(settingsOpened, isTrue);
     });
   });
 }

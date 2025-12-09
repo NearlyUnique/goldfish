@@ -31,9 +31,9 @@ class HomeScreen extends StatefulWidget {
     VisitRepository? visitRepository,
     LocationService? locationService,
     TileProvider? tileProvider,
-  })  : _visitRepository = visitRepository,
-        _locationService = locationService,
-        _tileProvider = tileProvider;
+  }) : _visitRepository = visitRepository,
+       _locationService = locationService,
+       _tileProvider = tileProvider;
 
   /// The authentication notifier for managing auth state.
   final AuthNotifier authNotifier;
@@ -75,8 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _visitRepository =
         widget._visitRepository ??
         VisitRepository(firestore: FirebaseFirestore.instance);
-    _locationService = widget._locationService ??
-        GeolocatorLocationService();
+    _locationService = widget._locationService ?? GeolocatorLocationService();
     _loadVisits();
   }
 
@@ -131,13 +130,27 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
+      // Check if location services are enabled first
+      final serviceEnabled = await _locationService.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          setState(() {
+            _isLoadingLocation = false;
+            _locationError =
+                'Please enable location services in device settings.';
+          });
+        }
+        return;
+      }
+
       // Check if we already have permission
       final hasPermission = await _locationService.hasPermission();
       if (!hasPermission) {
         // Request permission
         final granted = await _locationService.requestPermission();
         if (!granted) {
-          final deniedForever = await _locationService.isPermissionDeniedForever();
+          final deniedForever = await _locationService
+              .isPermissionDeniedForever();
           if (mounted) {
             setState(() {
               _isLoadingLocation = false;
@@ -163,7 +176,8 @@ class _HomeScreenState extends State<HomeScreen> {
             _locationError = null;
           } else {
             // Location unavailable but not an error - map can still show visits
-            _locationError = null;
+            _locationError =
+                'Unable to get current location. Showing visited places.';
           }
         });
       }
@@ -175,7 +189,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _isLoadingLocation = false;
-          _locationError = 'Unable to get current location. Showing visited places.';
+          _locationError =
+              'Unable to get current location. Showing visited places.';
         });
       }
     }
@@ -192,7 +207,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     // Load location when switching to map view
-    if (mode == ViewMode.map && _currentLocation == null && !_isLoadingLocation) {
+    if (mode == ViewMode.map &&
+        _currentLocation == null &&
+        !_isLoadingLocation) {
       _loadLocation();
     }
   }
@@ -330,8 +347,7 @@ class _HomeScreenState extends State<HomeScreen> {
         visits: _visits,
         isLoading: _isLoadingLocation,
         errorMessage: _locationError,
-        onRetry: _locationError != null &&
-                _locationError!.contains('settings')
+        onRetry: _locationError != null && _locationError!.contains('settings')
             ? _handleOpenSettings
             : _loadLocation,
         tileProvider: widget._tileProvider,

@@ -50,6 +50,7 @@ dependencies:
 
     # Map
     flutter_map: ^6.1.0
+    latlong2: ^0.9.1
     flutter_cache_manager: ^3.4.1
     url_launcher: ^6.3.1
 

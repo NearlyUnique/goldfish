@@ -5,7 +5,6 @@ import 'package:goldfish/core/data/models/visit_model.dart';
 import 'package:goldfish/core/theme/app_theme.dart';
 import 'package:goldfish/features/map/presentation/widgets/map_view_widget.dart';
 import 'package:goldfish/features/map/presentation/widgets/visit_marker.dart';
-import 'package:latlong2/latlong.dart';
 
 void main() {
   final now = DateTime(2024, 1, 1);
@@ -59,7 +58,7 @@ void main() {
   testWidgets('shows empty state when there is no data', (tester) async {
     await tester.pumpWidget(createWidget(visits: const []));
 
-    expect(find.text('No locations to show yet.'), findsOneWidget);
+    expect(find.text('No visits to display on map.'), findsOneWidget);
   });
 
   testWidgets('shows error state and triggers retry', (tester) async {
@@ -123,6 +122,68 @@ void main() {
     final map = tester.widget<FlutterMap>(find.byType(FlutterMap));
     expect(map.options.initialCenter.latitude, closeTo(15, 0.0001));
     expect(map.options.initialCenter.longitude, closeTo(15, 0.0001));
+  });
+
+  testWidgets('shows inline error with retry button', (tester) async {
+    var retried = false;
+    final visit = createVisit(id: 'visit-1', lat: 51.5, long: -0.1);
+
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit],
+        currentLocation: const GeoLatLong(lat: 51.5, long: -0.12),
+        errorMessage: 'Unable to get current location. Showing visited places.',
+        onRetry: () => retried = true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Unable to get current location. Showing visited places.'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(retried, isTrue);
+  });
+
+  testWidgets('shows inline error with open settings button when message contains settings', (tester) async {
+    var settingsOpened = false;
+    final visit = createVisit(id: 'visit-1', lat: 51.5, long: -0.1);
+
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit],
+        currentLocation: const GeoLatLong(lat: 51.5, long: -0.12),
+        errorMessage: 'Location permission required. Tap to enable in settings.',
+        onRetry: () => settingsOpened = true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Location permission required. Tap to enable in settings.'), findsOneWidget);
+    expect(find.text('Open Settings'), findsOneWidget);
+    expect(find.text('Retry'), findsNothing);
+
+    await tester.tap(find.text('Open Settings'));
+    await tester.pumpAndSettle();
+
+    expect(settingsOpened, isTrue);
+  });
+
+  testWidgets('shows map with visits when location unavailable', (tester) async {
+    final visit = createVisit(id: 'visit-1', lat: 51.5, long: -0.1);
+
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit],
+        errorMessage: 'Unable to get current location. Showing visited places.',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.text('Unable to get current location. Showing visited places.'), findsOneWidget);
   });
 }
 

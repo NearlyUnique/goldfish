@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:goldfish/core/data/models/visit_model.dart';
+import 'package:goldfish/core/logging/app_logger.dart';
 import 'package:goldfish/features/map/domain/models/map_marker.dart';
 import 'package:goldfish/features/map/presentation/widgets/osm_attribution.dart';
 import 'package:goldfish/features/map/presentation/widgets/visit_marker.dart';
@@ -82,21 +83,31 @@ class MapViewWidget extends StatelessWidget {
 
     return Stack(
       children: [
-        FlutterMap(
-          options: MapOptions(
-            initialCenter: mapCentre,
-            initialZoom: _defaultZoom,
-            minZoom: 3,
-            maxZoom: 18,
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: _tileUrl,
-              tileProvider:
-                  tileProvider ?? NetworkTileProvider(headers: _tileHeaders),
+        Positioned.fill(
+          child: FlutterMap(
+            options: MapOptions(
+              initialCenter: mapCentre,
+              initialZoom: _defaultZoom,
+              minZoom: 3,
+              maxZoom: 18,
             ),
-            if (markerWidgets.isNotEmpty) MarkerLayer(markers: markerWidgets),
-          ],
+            children: [
+              TileLayer(
+                urlTemplate: _tileUrl,
+                tileProvider:
+                    tileProvider ?? NetworkTileProvider(headers: _tileHeaders),
+                errorTileCallback: (tile, error, stackTrace) {
+                  AppLogger.error({
+                    'event': 'map_tile_load_error',
+                    'tile_coordinates': 'z:${tile.coordinates.z}, x:${tile.coordinates.x}, y:${tile.coordinates.y}',
+                    'error': error.toString(),
+                  });
+                },
+              ),
+              if (markerWidgets.isNotEmpty)
+                MarkerLayer(markers: markerWidgets),
+            ],
+          ),
         ),
         const OsmAttribution(),
         if (errorMessage != null)
@@ -184,7 +195,7 @@ class _EmptyState extends StatelessWidget {
           children: [
             const Icon(Icons.map_outlined, size: 48),
             const SizedBox(height: 12),
-            const Text('No locations to show yet.'),
+            const Text('No visits to display on map.'),
             const SizedBox(height: 12),
             if (onRetry != null)
               ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
@@ -203,6 +214,7 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isSettingsAction = message.contains('settings');
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -224,7 +236,10 @@ class _ErrorState extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             if (onRetry != null)
-              ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+              ElevatedButton(
+                onPressed: onRetry,
+                child: Text(isSettingsAction ? 'Open Settings' : 'Retry'),
+              ),
           ],
         ),
       ),
@@ -241,6 +256,7 @@ class _InlineError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isSettingsAction = message.contains('settings');
     return SafeArea(
       child: Align(
         alignment: Alignment.topCenter,
@@ -268,7 +284,10 @@ class _InlineError extends StatelessWidget {
                   ),
                   if (onRetry != null) ...[
                     const SizedBox(width: 12),
-                    TextButton(onPressed: onRetry, child: const Text('Retry')),
+                    TextButton(
+                      onPressed: onRetry,
+                      child: Text(isSettingsAction ? 'Open Settings' : 'Retry'),
+                    ),
                   ],
                 ],
               ),
