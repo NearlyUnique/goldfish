@@ -33,6 +33,17 @@ abstract class LocationService {
   /// Does not throw exceptions - returns null gracefully on any error.
   Future<Position?> getCurrentLocation();
 
+  /// Gets a stream of position updates.
+  ///
+  /// The stream will emit position updates based on the configured
+  /// [LocationSettings]. Returns `null` if:
+  /// - Permission is denied
+  /// - Location services are disabled
+  ///
+  /// The stream may emit errors if location becomes unavailable after
+  /// the stream has started. Listeners should handle errors appropriately.
+  Stream<Position>? getPositionStream();
+
   /// Checks if location services are enabled on the device.
   ///
   /// Returns `true` if location services are enabled, `false` otherwise.
@@ -227,6 +238,35 @@ class GeolocatorLocationService implements LocationService {
         'error': e.toString(),
       });
       // Don't throw - return null gracefully
+      return null;
+    }
+  }
+
+  @override
+  Stream<Position>? getPositionStream() {
+    try {
+      // Use stream-specific settings with distanceFilter for efficient updates
+      // Updates when device moves 10 meters
+      const streamSettings = LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10, // Update when moved 10 meters
+      );
+
+      return _geolocatorWrapper.getPositionStream(
+        locationSettings: streamSettings,
+      ).handleError((error) {
+        AppLogger.error({
+          'event': 'location_stream_error',
+          'error': error.toString(),
+        });
+        // Re-throw so listeners can handle it
+        throw error;
+      });
+    } catch (e) {
+      AppLogger.error({
+        'event': 'location_stream_create_error',
+        'error': e.toString(),
+      });
       return null;
     }
   }

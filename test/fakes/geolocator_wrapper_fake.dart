@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:geolocator/geolocator.dart';
 import 'package:goldfish/core/location/geolocator_wrapper.dart';
 
@@ -8,12 +10,16 @@ class FakeGeolocatorWrapper implements GeolocatorWrapper {
     Future<LocationPermission> Function()? onRequestPermission,
     Future<Position> Function({LocationSettings? locationSettings})?
         onGetCurrentPosition,
+    Stream<Position> Function({LocationSettings? locationSettings})?
+        onGetPositionStream,
     Future<bool> Function()? onIsLocationServiceEnabled,
     Future<bool> Function()? onOpenAppSettings,
   })  : onCheckPermission = onCheckPermission ?? _defaultCheckPermission,
         onRequestPermission = onRequestPermission ?? _defaultRequestPermission,
         onGetCurrentPosition =
             onGetCurrentPosition ?? _defaultGetCurrentPosition,
+        onGetPositionStream =
+            onGetPositionStream ?? _defaultGetPositionStream,
         onIsLocationServiceEnabled =
             onIsLocationServiceEnabled ?? _defaultIsLocationServiceEnabled,
         onOpenAppSettings = onOpenAppSettings ?? _defaultOpenAppSettings;
@@ -22,6 +28,8 @@ class FakeGeolocatorWrapper implements GeolocatorWrapper {
   Future<LocationPermission> Function() onRequestPermission;
   Future<Position> Function({LocationSettings? locationSettings})
       onGetCurrentPosition;
+  Stream<Position> Function({LocationSettings? locationSettings})
+      onGetPositionStream;
   Future<bool> Function() onIsLocationServiceEnabled;
   Future<bool> Function() onOpenAppSettings;
 
@@ -34,6 +42,10 @@ class FakeGeolocatorWrapper implements GeolocatorWrapper {
   @override
   Future<Position> getCurrentPosition({LocationSettings? locationSettings}) =>
       onGetCurrentPosition(locationSettings: locationSettings);
+
+  @override
+  Stream<Position> getPositionStream({LocationSettings? locationSettings}) =>
+      onGetPositionStream(locationSettings: locationSettings);
 
   @override
   Future<bool> isLocationServiceEnabled() => onIsLocationServiceEnabled();
@@ -62,6 +74,11 @@ class FakeGeolocatorWrapper implements GeolocatorWrapper {
         headingAccuracy: 0,
         altitudeAccuracy: 0,
       );
+
+  static Stream<Position> _defaultGetPositionStream({
+    LocationSettings? locationSettings,
+  }) =>
+      const Stream<Position>.empty();
 
   static Future<bool> _defaultIsLocationServiceEnabled() async => false;
 

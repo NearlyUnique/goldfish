@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:goldfish/core/auth/auth_notifier.dart';
 import 'package:goldfish/core/data/models/visit_model.dart';
@@ -68,6 +71,8 @@ class _HomeScreenState extends State<HomeScreen> {
   GeoLatLong? _currentLocation;
   bool _isLoadingLocation = false;
   String? _locationError;
+  StreamSubscription<Position>? _locationStreamSubscription;
+  Timer? _locationUpdateTimer;
 
   @override
   void initState() {
@@ -80,6 +85,12 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadVisits();
     });
+  }
+
+  @override
+  void dispose() {
+    _stopLocationTracking();
+    super.dispose();
   }
 
   Future<void> _loadVisits() async {
@@ -122,7 +133,36 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _loadLocation() async {
+  void _handleViewModeChange(Set<ViewMode> selection) {
+    final mode = selection.firstOrNull;
+    if (mode == null || mode == _viewMode) {
+      return;
+    }
+
+    setState(() {
+      _viewMode = mode;
+    });
+
+    // Start/stop location tracking based on view mode
+    if (mode == ViewMode.map) {
+      _startLocationTracking();
+    } else {
+      _stopLocationTracking();
+    }
+  }
+
+  Future<void> _handleOpenSettings() async {
+    await _locationService.openAppSettings();
+  }
+
+  /// Starts continuous location tracking for the map view.
+  ///
+  /// Updates location when the device moves 10 meters or every 30 seconds,
+  /// whichever comes first. Only tracks when map view is active.
+  Future<void> _startLocationTracking() async {
+    // Stop any existing tracking
+    _stopLocationTracking();
+
     if (!mounted) {
       return;
     }
@@ -166,59 +206,108 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
 
-      // Get current location
-      final position = await _locationService.getCurrentLocation();
-      if (mounted) {
+      // Get initial location
+      final initialPosition = await _locationService.getCurrentLocation();
+      if (mounted && initialPosition != null) {
         setState(() {
+          _currentLocation = GeoLatLong(
+            lat: initialPosition.latitude,
+            long: initialPosition.longitude,
+          );
           _isLoadingLocation = false;
-          if (position != null) {
-            _currentLocation = GeoLatLong(
-              lat: position.latitude,
-              long: position.longitude,
-            );
-            _locationError = null;
-          } else {
-            // Location unavailable but not an error - map can still show visits
-            _locationError =
-                'Unable to get current location. Showing visited places.';
-          }
+          _locationError = null;
         });
-      }
-    } catch (e) {
-      AppLogger.error({
-        'event': 'home_load_location_error',
-        'error': e.toString(),
-      });
-      if (mounted) {
+      } else if (mounted) {
         setState(() {
           _isLoadingLocation = false;
           _locationError =
               'Unable to get current location. Showing visited places.';
         });
       }
+
+      // Start listening to location stream (updates on 10m movement)
+      final stream = _locationService.getPositionStream();
+      if (stream != null && mounted) {
+        _locationStreamSubscription = stream.listen(
+          (position) {
+            if (mounted) {
+              setState(() {
+                _currentLocation = GeoLatLong(
+                  lat: position.latitude,
+                  long: position.longitude,
+                );
+                _locationError = null;
+              });
+            }
+          },
+          onError: (error) {
+            AppLogger.error({
+              'event': 'home_location_stream_error',
+              'error': error.toString(),
+            });
+            if (mounted) {
+              setState(() {
+                _locationError =
+                    'Location tracking error. Showing last known location.';
+              });
+            }
+          },
+        );
+      }
+
+      // Start periodic timer for 30-second fallback updates
+      if (mounted) {
+        _locationUpdateTimer = Timer.periodic(
+          const Duration(seconds: 30),
+          (_) async {
+            if (!mounted || _viewMode != ViewMode.map) {
+              return;
+            }
+
+            try {
+              final position = await _locationService.getCurrentLocation();
+              if (mounted && position != null) {
+                setState(() {
+                  _currentLocation = GeoLatLong(
+                    lat: position.latitude,
+                    long: position.longitude,
+                  );
+                  _locationError = null;
+                });
+              }
+            } catch (e) {
+              AppLogger.error({
+                'event': 'home_location_timer_update_error',
+                'error': e.toString(),
+              });
+              // Don't update error state on timer failures - stream might still work
+            }
+          },
+        );
+      }
+    } catch (e) {
+      AppLogger.error({
+        'event': 'home_start_location_tracking_error',
+        'error': e.toString(),
+      });
+      if (mounted) {
+        setState(() {
+          _isLoadingLocation = false;
+          _locationError =
+              'Unable to start location tracking. Showing visited places.';
+        });
+      }
     }
   }
 
-  void _handleViewModeChange(Set<ViewMode> selection) {
-    final mode = selection.firstOrNull;
-    if (mode == null || mode == _viewMode) {
-      return;
-    }
-
-    setState(() {
-      _viewMode = mode;
-    });
-
-    // Load location when switching to map view
-    if (mode == ViewMode.map &&
-        _currentLocation == null &&
-        !_isLoadingLocation) {
-      _loadLocation();
-    }
-  }
-
-  Future<void> _handleOpenSettings() async {
-    await _locationService.openAppSettings();
+  /// Stops continuous location tracking.
+  ///
+  /// Cancels the location stream subscription and periodic timer.
+  void _stopLocationTracking() {
+    _locationStreamSubscription?.cancel();
+    _locationStreamSubscription = null;
+    _locationUpdateTimer?.cancel();
+    _locationUpdateTimer = null;
   }
 
   Future<void> _handleSignOut(BuildContext context) async {
@@ -352,7 +441,7 @@ class _HomeScreenState extends State<HomeScreen> {
         errorMessage: _locationError,
         onRetry: _locationError != null && _locationError!.contains('settings')
             ? _handleOpenSettings
-            : _loadLocation,
+            : _startLocationTracking,
         tileProvider: widget._tileProvider,
       );
     }

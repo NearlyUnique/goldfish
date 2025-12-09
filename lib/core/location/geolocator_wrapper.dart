@@ -16,6 +16,13 @@ abstract class GeolocatorWrapper {
   /// Gets the current position with the given settings.
   Future<Position> getCurrentPosition({LocationSettings? locationSettings});
 
+  /// Gets a stream of position updates with the given settings.
+  ///
+  /// The stream will emit position updates when the device moves by at least
+  /// the distance specified in [locationSettings.distanceFilter], or when
+  /// other location changes occur based on the settings.
+  Stream<Position> getPositionStream({LocationSettings? locationSettings});
+
   /// Checks if location services are enabled on the device.
   Future<bool> isLocationServiceEnabled();
 
@@ -43,6 +50,11 @@ class GeolocatorPackageWrapper implements GeolocatorWrapper {
   @override
   Future<Position> getCurrentPosition({LocationSettings? locationSettings}) {
     return Geolocator.getCurrentPosition(locationSettings: locationSettings);
+  }
+
+  @override
+  Stream<Position> getPositionStream({LocationSettings? locationSettings}) {
+    return Geolocator.getPositionStream(locationSettings: locationSettings);
   }
 
   @override
