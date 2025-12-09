@@ -23,7 +23,7 @@ BOOTSTRAP_TEST := test/bootstrap_test.dart
 SOURCE_FILES := $(shell find $(LIB_DIR) -name '*.dart' 2>/dev/null)
 
 # Phony targets (always execute, don't produce files)
-.PHONY: help clean em_launch em_run test_watch lint audit audit-osv audit-dep coverage_html firebase-deploy-rules
+.PHONY: help clean em_launch em_run test_watch lint audit audit-osv audit-dep coverage_html firebase-deploy-rules devices
 
 .DEFAULT_GOAL := help
 
@@ -38,6 +38,10 @@ $(APK_PATH): $(PUBSPEC) $(SOURCE_FILES) $(ANDROID_DIR)
 	@echo "APK built at: $(APK_PATH)"
 
 build: $(APK_PATH) ## Build release APK
+
+devices:
+	@echo Checking devices
+	@$(ADB) devices
 
 # Install depends on APK file
 install: $(APK_PATH) ## Install APK on connected device/emulator
