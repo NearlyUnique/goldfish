@@ -12,6 +12,7 @@ import 'package:goldfish/core/data/visit_exceptions.dart';
 import 'package:goldfish/core/location/location_service.dart';
 import 'package:goldfish/core/logging/app_logger.dart';
 import 'package:goldfish/features/map/presentation/widgets/map_view_widget.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// View mode for the home screen.
 enum ViewMode {
@@ -406,8 +407,93 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+        onLongPress: () => _showVisitContextMenu(context, visit),
       ),
     );
+  }
+
+  /// Shows a context menu for a visit item with actions.
+  void _showVisitContextMenu(BuildContext context, Visit visit) {
+    final location = visit.gpsKnown ?? visit.gpsRecorded;
+    if (location == null) {
+      // No location available, show a message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No location data available for this visit'),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.map),
+                title: const Text('Open in Maps'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _openLocationInMaps(location, visit.placeName);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Opens the given location in the default maps application.
+  ///
+  /// On Android, tries Google Maps URL first (most reliable), then falls back to geo: URI.
+  /// On iOS, uses geo: URI which opens Apple Maps or user's preferred map app.
+  Future<void> _openLocationInMaps(GeoLatLong location, String placeName) async {
+    try {
+      // Try Google Maps URL first (works reliably on Android and opens in app if installed)
+      final googleMapsUri = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=${location.lat},${location.long}',
+      );
+
+      if (await canLaunchUrl(googleMapsUri)) {
+        await launchUrl(googleMapsUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+
+      // Fallback to simple geo: URI scheme (works on both Android and iOS)
+      // Use simpler format without query parameters for better compatibility
+      final geoUri = Uri.parse('geo:${location.lat},${location.long}');
+
+      if (await canLaunchUrl(geoUri)) {
+        await launchUrl(geoUri, mode: LaunchMode.externalApplication);
+        return;
+      }
+
+      // If both fail, show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to open maps application'),
+          ),
+        );
+      }
+    } catch (e) {
+      AppLogger.error({
+        'event': 'home_open_maps_error',
+        'error': e.toString(),
+        'location': location.toString(),
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to open maps application'),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildViewToggle() {

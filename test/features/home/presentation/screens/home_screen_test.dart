@@ -973,6 +973,150 @@ void main() {
       // Assert - settings were opened
       expect(settingsOpened, isTrue);
     });
+
+    testWidgets('shows context menu when long pressing visit with location', (
+      tester,
+    ) async {
+      // Arrange
+      final now = DateTime.now();
+      final visit = Visit(
+        id: 'visit1',
+        userId: 'user123',
+        placeName: 'Test Place',
+        gpsKnown: const GeoLatLong(lat: 51.5074, long: -0.1278),
+        addedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      );
+      when(
+        () => mockVisitRepository.getUserVisits(any()),
+      ).thenAnswer((_) async => [visit]);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      // Assert - visit is displayed
+      expect(find.text('Test Place'), findsOneWidget);
+
+      // Act - long press on the visit item
+      final listTile = find.byType(ListTile);
+      await tester.longPress(listTile);
+      await tester.pumpAndSettle();
+
+      // Assert - context menu (bottom sheet) is shown
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('Open in Maps'), findsOneWidget);
+    });
+
+    testWidgets('shows snackbar when long pressing visit without location', (
+      tester,
+    ) async {
+      // Arrange
+      final now = DateTime.now();
+      final visit = Visit(
+        id: 'visit1',
+        userId: 'user123',
+        placeName: 'Test Place',
+        // No location data
+        addedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      );
+      when(
+        () => mockVisitRepository.getUserVisits(any()),
+      ).thenAnswer((_) async => [visit]);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      // Assert - visit is displayed
+      expect(find.text('Test Place'), findsOneWidget);
+
+      // Act - long press on the visit item
+      final listTile = find.byType(ListTile);
+      await tester.longPress(listTile);
+      await tester.pumpAndSettle();
+
+      // Assert - snackbar is shown with error message
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(
+        find.text('No location data available for this visit'),
+        findsOneWidget,
+      );
+      // Context menu should not be shown
+      expect(find.byType(BottomSheet), findsNothing);
+    });
+
+    testWidgets('uses gpsRecorded when gpsKnown is not available', (
+      tester,
+    ) async {
+      // Arrange
+      final now = DateTime.now();
+      final visit = Visit(
+        id: 'visit1',
+        userId: 'user123',
+        placeName: 'Test Place',
+        gpsRecorded: const GeoLatLong(lat: 51.5074, long: -0.1278),
+        // gpsKnown is null, should fall back to gpsRecorded
+        addedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      );
+      when(
+        () => mockVisitRepository.getUserVisits(any()),
+      ).thenAnswer((_) async => [visit]);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      // Act - long press on the visit item
+      final listTile = find.byType(ListTile);
+      await tester.longPress(listTile);
+      await tester.pumpAndSettle();
+
+      // Assert - context menu is shown (location is available via gpsRecorded)
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('Open in Maps'), findsOneWidget);
+    });
+
+    testWidgets('closes context menu when tapping Open in Maps', (
+      tester,
+    ) async {
+      // Arrange
+      final now = DateTime.now();
+      final visit = Visit(
+        id: 'visit1',
+        userId: 'user123',
+        placeName: 'Test Place',
+        gpsKnown: const GeoLatLong(lat: 51.5074, long: -0.1278),
+        addedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      );
+      when(
+        () => mockVisitRepository.getUserVisits(any()),
+      ).thenAnswer((_) async => [visit]);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      // Act - long press on the visit item
+      final listTile = find.byType(ListTile);
+      await tester.longPress(listTile);
+      await tester.pumpAndSettle();
+
+      // Assert - context menu is shown
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('Open in Maps'), findsOneWidget);
+
+      // Act - tap "Open in Maps"
+      await tester.tap(find.text('Open in Maps'));
+      await tester.pumpAndSettle();
+
+      // Assert - context menu is closed
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.text('Open in Maps'), findsNothing);
+    });
   });
 }
 
