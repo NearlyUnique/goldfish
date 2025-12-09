@@ -14,6 +14,8 @@ Phase 1 implements the **current location** map view mode with a toggle between 
 - **Testing**: Comprehensive tests following existing patterns
 - **Tile Caching**: Include if possible
 - **OSM Attribution**: Follow OpenStreetMap licensing requirements
+- **Fully tested**: As per the rest of this app everything must have tests. Test setup must be as a simple as possible. Mocks follow the current pattern. If any Fire Store indexes or permission changes are required, an explanation should be included.
+- **Mark Complete**: Once complete add a ✅ to the task heading.
 
 ---
 
@@ -106,11 +108,6 @@ test/
 3. **HomeScreen** passes visits + current location to **MapViewWidget**
 4. **MapViewWidget** displays map with markers
 5. User toggles between list/map view
-
-### Task completion
-
-Once complete add a ✅ to the task heading.
-Tests must have been run successfully to mark task complete.
 
 ---
 
@@ -226,7 +223,7 @@ class MapMarker {
 
 ---
 
-### Task 5: Create Map View Widget
+### Task 5: Create Map View Widget ✅
 **Priority**: Critical
 **Estimated Time**: 2-3 hours
 
