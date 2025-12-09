@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
@@ -415,15 +416,6 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Shows a context menu for a visit item with actions.
   void _showVisitContextMenu(BuildContext context, Visit visit) {
     final location = visit.gpsKnown ?? visit.gpsRecorded;
-    if (location == null) {
-      // No location available, show a message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No location data available for this visit'),
-        ),
-      );
-      return;
-    }
 
     showModalBottomSheet<void>(
       context: context,
@@ -433,17 +425,44 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.map),
-                title: const Text('Open in Maps'),
+                leading: const Icon(Icons.copy),
+                title: const Text('Copy to Clipboard'),
                 onTap: () {
                   Navigator.of(context).pop();
-                  _openLocationInMaps(location, visit.placeName);
+                  _copyVisitToClipboard(context, visit);
                 },
               ),
+              if (location != null)
+                ListTile(
+                  leading: const Icon(Icons.map),
+                  title: const Text('Open in Maps'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _openLocationInMaps(location, visit.placeName);
+                  },
+                ),
             ],
           ),
         );
       },
+    );
+  }
+
+  /// Copies the visit's place name and address to the clipboard.
+  void _copyVisitToClipboard(BuildContext context, Visit visit) {
+    final buffer = StringBuffer();
+    buffer.writeln(visit.placeName);
+    if (visit.placeAddress != null) {
+      buffer.write(visit.placeAddress!.toFormattedString());
+    }
+    final text = buffer.toString();
+
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Copied to clipboard'),
+        duration: Duration(seconds: 2),
+      ),
     );
   }
 

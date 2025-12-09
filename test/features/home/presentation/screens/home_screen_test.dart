@@ -1005,47 +1005,46 @@ void main() {
 
       // Assert - context menu (bottom sheet) is shown
       expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('Copy to Clipboard'), findsOneWidget);
       expect(find.text('Open in Maps'), findsOneWidget);
     });
 
-    testWidgets('shows snackbar when long pressing visit without location', (
-      tester,
-    ) async {
-      // Arrange
-      final now = DateTime.now();
-      final visit = Visit(
-        id: 'visit1',
-        userId: 'user123',
-        placeName: 'Test Place',
-        // No location data
-        addedAt: now,
-        createdAt: now,
-        updatedAt: now,
-      );
-      when(
-        () => mockVisitRepository.getUserVisits(any()),
-      ).thenAnswer((_) async => [visit]);
+    testWidgets(
+      'shows context menu when long pressing visit without location',
+      (tester) async {
+        // Arrange
+        final now = DateTime.now();
+        final visit = Visit(
+          id: 'visit1',
+          userId: 'user123',
+          placeName: 'Test Place',
+          // No location data
+          addedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        );
+        when(
+          () => mockVisitRepository.getUserVisits(any()),
+        ).thenAnswer((_) async => [visit]);
 
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
 
-      // Assert - visit is displayed
-      expect(find.text('Test Place'), findsOneWidget);
+        // Assert - visit is displayed
+        expect(find.text('Test Place'), findsOneWidget);
 
-      // Act - long press on the visit item
-      final listTile = find.byType(ListTile);
-      await tester.longPress(listTile);
-      await tester.pumpAndSettle();
+        // Act - long press on the visit item
+        final listTile = find.byType(ListTile);
+        await tester.longPress(listTile);
+        await tester.pumpAndSettle();
 
-      // Assert - snackbar is shown with error message
-      expect(find.byType(SnackBar), findsOneWidget);
-      expect(
-        find.text('No location data available for this visit'),
-        findsOneWidget,
-      );
-      // Context menu should not be shown
-      expect(find.byType(BottomSheet), findsNothing);
-    });
+        // Assert - context menu is shown with copy option only
+        expect(find.byType(BottomSheet), findsOneWidget);
+        expect(find.text('Copy to Clipboard'), findsOneWidget);
+        // Open in Maps should not be shown when there's no location
+        expect(find.text('Open in Maps'), findsNothing);
+      },
+    );
 
     testWidgets('uses gpsRecorded when gpsKnown is not available', (
       tester,
@@ -1076,6 +1075,7 @@ void main() {
 
       // Assert - context menu is shown (location is available via gpsRecorded)
       expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('Copy to Clipboard'), findsOneWidget);
       expect(find.text('Open in Maps'), findsOneWidget);
     });
 
@@ -1116,6 +1116,85 @@ void main() {
       // Assert - context menu is closed
       expect(find.byType(BottomSheet), findsNothing);
       expect(find.text('Open in Maps'), findsNothing);
+    });
+
+    testWidgets('copies visit to clipboard when tapping Copy to Clipboard', (
+      tester,
+    ) async {
+      // Arrange
+      final now = DateTime.now();
+      final visit = Visit(
+        id: 'visit1',
+        userId: 'user123',
+        placeName: 'Test Place',
+        placeAddress: const Address(
+          nameNumber: '123',
+          street: 'Test Street',
+          city: 'Test City',
+          postcode: 'TE5T 1NG',
+        ),
+        addedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      );
+      when(
+        () => mockVisitRepository.getUserVisits(any()),
+      ).thenAnswer((_) async => [visit]);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      // Act - long press on the visit item
+      final listTile = find.byType(ListTile);
+      await tester.longPress(listTile);
+      await tester.pumpAndSettle();
+
+      // Assert - context menu is shown
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text('Copy to Clipboard'), findsOneWidget);
+
+      // Act - tap "Copy to Clipboard"
+      await tester.tap(find.text('Copy to Clipboard'));
+      await tester.pumpAndSettle();
+
+      // Assert - context menu is closed
+      expect(find.byType(BottomSheet), findsNothing);
+      // Snackbar should be shown
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('Copied to clipboard'), findsOneWidget);
+    });
+
+    testWidgets('copies visit without address to clipboard', (tester) async {
+      // Arrange
+      final now = DateTime.now();
+      final visit = Visit(
+        id: 'visit1',
+        userId: 'user123',
+        placeName: 'Test Place',
+        // No address
+        addedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      );
+      when(
+        () => mockVisitRepository.getUserVisits(any()),
+      ).thenAnswer((_) async => [visit]);
+
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      // Act - long press on the visit item
+      final listTile = find.byType(ListTile);
+      await tester.longPress(listTile);
+      await tester.pumpAndSettle();
+
+      // Act - tap "Copy to Clipboard"
+      await tester.tap(find.text('Copy to Clipboard'));
+      await tester.pumpAndSettle();
+
+      // Assert - snackbar is shown
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('Copied to clipboard'), findsOneWidget);
     });
   });
 }
