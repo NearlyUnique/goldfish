@@ -109,7 +109,8 @@ test/
 
 ### Task completion
 
-Once complete add a ✅ to the task heading
+Once complete add a ✅ to the task heading.
+Tests must have been run successfully to mark task complete.
 
 ---
 
@@ -197,7 +198,7 @@ class MapMarker {
 
 ---
 
-### Task 4: Create Visit Marker Widget
+### Task 4: Create Visit Marker Widget ✅
 **Priority**: High
 **Estimated Time**: 1 hour
 

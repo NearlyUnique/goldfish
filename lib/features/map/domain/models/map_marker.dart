@@ -99,4 +99,3 @@ class MapMarker {
       'MapMarker(visitId: $visitId, placeName: $placeName, '
       'coordinates: $coordinates)';
 }
-
