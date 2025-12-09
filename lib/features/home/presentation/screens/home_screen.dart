@@ -1,22 +1,39 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:goldfish/core/auth/auth_notifier.dart';
 import 'package:goldfish/core/data/models/visit_model.dart';
 import 'package:goldfish/core/data/repositories/visit_repository.dart';
 import 'package:goldfish/core/data/visit_exceptions.dart';
+import 'package:goldfish/core/location/location_service.dart';
 import 'package:goldfish/core/logging/app_logger.dart';
+import 'package:goldfish/features/map/presentation/widgets/map_view_widget.dart';
+
+/// View mode for the home screen.
+enum ViewMode {
+  /// List view showing visits as a scrollable list.
+  list,
+
+  /// Map view showing visits as markers on a map.
+  map,
+}
 
 /// Home screen displaying authenticated user's visits.
 ///
 /// Shows a list of recorded visits with pull-to-refresh functionality.
+/// Supports toggling between list and map views.
 class HomeScreen extends StatefulWidget {
   /// Creates a new [HomeScreen].
   const HomeScreen({
     super.key,
     required this.authNotifier,
     VisitRepository? visitRepository,
-  }) : _visitRepository = visitRepository;
+    LocationService? locationService,
+    TileProvider? tileProvider,
+  })  : _visitRepository = visitRepository,
+        _locationService = locationService,
+        _tileProvider = tileProvider;
 
   /// The authentication notifier for managing auth state.
   final AuthNotifier authNotifier;
@@ -26,15 +43,31 @@ class HomeScreen extends StatefulWidget {
   /// If not provided, creates a default [VisitRepository] instance.
   final VisitRepository? _visitRepository;
 
+  /// The location service for getting current location.
+  ///
+  /// If not provided, creates a default [GeolocatorLocationService] instance.
+  final LocationService? _locationService;
+
+  /// The tile provider for the map view.
+  ///
+  /// If not provided, uses the default network tile provider.
+  /// Primarily used for testing to avoid network requests.
+  final TileProvider? _tileProvider;
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
   late final VisitRepository _visitRepository;
+  late final LocationService _locationService;
   List<Visit> _visits = [];
   bool _isLoading = false;
   String? _error;
+  ViewMode _viewMode = ViewMode.list;
+  GeoLatLong? _currentLocation;
+  bool _isLoadingLocation = false;
+  String? _locationError;
 
   @override
   void initState() {
@@ -42,6 +75,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _visitRepository =
         widget._visitRepository ??
         VisitRepository(firestore: FirebaseFirestore.instance);
+    _locationService = widget._locationService ??
+        GeolocatorLocationService();
     _loadVisits();
   }
 
@@ -83,6 +118,87 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     }
+  }
+
+  Future<void> _loadLocation() async {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isLoadingLocation = true;
+      _locationError = null;
+    });
+
+    try {
+      // Check if we already have permission
+      final hasPermission = await _locationService.hasPermission();
+      if (!hasPermission) {
+        // Request permission
+        final granted = await _locationService.requestPermission();
+        if (!granted) {
+          final deniedForever = await _locationService.isPermissionDeniedForever();
+          if (mounted) {
+            setState(() {
+              _isLoadingLocation = false;
+              _locationError = deniedForever
+                  ? 'Location permission required. Tap to enable in settings.'
+                  : 'Location permission is required to show your current location on the map.';
+            });
+          }
+          return;
+        }
+      }
+
+      // Get current location
+      final position = await _locationService.getCurrentLocation();
+      if (mounted) {
+        setState(() {
+          _isLoadingLocation = false;
+          if (position != null) {
+            _currentLocation = GeoLatLong(
+              lat: position.latitude,
+              long: position.longitude,
+            );
+            _locationError = null;
+          } else {
+            // Location unavailable but not an error - map can still show visits
+            _locationError = null;
+          }
+        });
+      }
+    } catch (e) {
+      AppLogger.error({
+        'event': 'home_load_location_error',
+        'error': e.toString(),
+      });
+      if (mounted) {
+        setState(() {
+          _isLoadingLocation = false;
+          _locationError = 'Unable to get current location. Showing visited places.';
+        });
+      }
+    }
+  }
+
+  void _handleViewModeChange(Set<ViewMode> selection) {
+    final mode = selection.firstOrNull;
+    if (mode == null || mode == _viewMode) {
+      return;
+    }
+
+    setState(() {
+      _viewMode = mode;
+    });
+
+    // Load location when switching to map view
+    if (mode == ViewMode.map && _currentLocation == null && !_isLoadingLocation) {
+      _loadLocation();
+    }
+  }
+
+  Future<void> _handleOpenSettings() async {
+    await _locationService.openAppSettings();
   }
 
   Future<void> _handleSignOut(BuildContext context) async {
@@ -185,7 +301,44 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildViewToggle() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SegmentedButton<ViewMode>(
+        segments: const [
+          ButtonSegment<ViewMode>(
+            value: ViewMode.list,
+            icon: Icon(Icons.list),
+            label: Text('List'),
+          ),
+          ButtonSegment<ViewMode>(
+            value: ViewMode.map,
+            icon: Icon(Icons.map),
+            label: Text('Map'),
+          ),
+        ],
+        selected: {_viewMode},
+        onSelectionChanged: _handleViewModeChange,
+      ),
+    );
+  }
+
   Widget _buildBody() {
+    if (_viewMode == ViewMode.map) {
+      return MapViewWidget(
+        currentLocation: _currentLocation,
+        visits: _visits,
+        isLoading: _isLoadingLocation,
+        errorMessage: _locationError,
+        onRetry: _locationError != null &&
+                _locationError!.contains('settings')
+            ? _handleOpenSettings
+            : _loadLocation,
+        tileProvider: widget._tileProvider,
+      );
+    }
+
+    // List view (existing logic)
     if (_isLoading && _visits.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -276,7 +429,12 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: _buildBody(),
+      body: Column(
+        children: [
+          _buildViewToggle(),
+          Expanded(child: _buildBody()),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final bool? result = await context.push('/record-visit');
