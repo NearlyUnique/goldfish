@@ -13,7 +13,7 @@ import 'package:goldfish/features/map/presentation/widgets/visit_marker.dart';
 /// Handles loading, error, and empty states while keeping the map centred on the
 /// user's location when available. Falls back to the centre of the provided
 /// visits or a default location when no coordinates are available.
-class MapViewWidget extends StatelessWidget {
+class MapViewWidget extends StatefulWidget {
   /// Creates a new [MapViewWidget].
   const MapViewWidget({
     super.key,
@@ -60,24 +60,46 @@ class MapViewWidget extends StatelessWidget {
       'Goldfish/1.0.0 (contact: update-contact@example.com)';
 
   @override
+  State<MapViewWidget> createState() => _MapViewWidgetState();
+}
+
+class _MapViewWidgetState extends State<MapViewWidget> {
+  late final MapController _mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (isLoading) {
+    if (widget.isLoading) {
       return const _LoadingState();
     }
 
-    final markers = MapMarker.fromVisits(visits);
-    final mapCentre = _resolveCentre(markers, currentLocation);
+    final markers = MapMarker.fromVisits(widget.visits);
+    final mapCentre = _resolveCentre(markers, widget.currentLocation);
 
-    if (currentLocation == null && markers.isEmpty) {
-      if (errorMessage != null) {
-        return _ErrorState(message: errorMessage!, onRetry: onRetry);
+    if (widget.currentLocation == null && markers.isEmpty) {
+      if (widget.errorMessage != null) {
+        return _ErrorState(
+          message: widget.errorMessage!,
+          onRetry: widget.onRetry,
+        );
       }
-      return _EmptyState(onRetry: onRetry);
+      return _EmptyState(onRetry: widget.onRetry);
     }
 
     final markerWidgets = <Marker>[
-      if (currentLocation != null)
-        _buildCurrentLocationMarker(currentLocation!),
+      if (widget.currentLocation != null)
+        _buildCurrentLocationMarker(widget.currentLocation!),
       ...markers.map(_buildVisitMarker),
     ];
 
@@ -85,21 +107,23 @@ class MapViewWidget extends StatelessWidget {
       children: [
         Positioned.fill(
           child: FlutterMap(
+            mapController: _mapController,
             options: MapOptions(
               initialCenter: mapCentre,
-              initialZoom: _defaultZoom,
+              initialZoom: MapViewWidget._defaultZoom,
               minZoom: 3,
               maxZoom: 18,
             ),
             children: [
               TileLayer(
-                urlTemplate: _tileUrl,
-                tileProvider:
-                    tileProvider ?? NetworkTileProvider(headers: _tileHeaders),
+                urlTemplate: MapViewWidget._tileUrl,
+                tileProvider: widget.tileProvider ??
+                    NetworkTileProvider(headers: _tileHeaders),
                 errorTileCallback: (tile, error, stackTrace) {
                   AppLogger.error({
                     'event': 'map_tile_load_error',
-                    'tile_coordinates': 'z:${tile.coordinates.z}, x:${tile.coordinates.x}, y:${tile.coordinates.y}',
+                    'tile_coordinates':
+                        'z:${tile.coordinates.z}, x:${tile.coordinates.x}, y:${tile.coordinates.y}',
                     'error': error.toString(),
                   });
                 },
@@ -110,13 +134,17 @@ class MapViewWidget extends StatelessWidget {
           ),
         ),
         const OsmAttribution(),
-        if (errorMessage != null)
-          _InlineError(message: errorMessage!, onRetry: onRetry),
+        if (widget.errorMessage != null)
+          _InlineError(
+            message: widget.errorMessage!,
+            onRetry: widget.onRetry,
+          ),
       ],
     );
   }
 
-  Map<String, String> get _tileHeaders => {'User-Agent': tileUserAgent};
+  Map<String, String> get _tileHeaders =>
+      {'User-Agent': widget.tileUserAgent};
 
   Marker _buildVisitMarker(MapMarker marker) {
     return Marker(
@@ -155,7 +183,7 @@ class MapViewWidget extends StatelessWidget {
       return LatLng(latSum / markers.length, longSum / markers.length);
     }
 
-    return _fallbackCentre;
+    return MapViewWidget._fallbackCentre;
   }
 
   LatLng _toLatLng(GeoLatLong coordinates) =>

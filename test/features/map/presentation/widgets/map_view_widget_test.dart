@@ -185,6 +185,174 @@ void main() {
     expect(find.byType(FlutterMap), findsOneWidget);
     expect(find.text('Unable to get current location. Showing visited places.'), findsOneWidget);
   });
+
+  testWidgets('updates markers when visits are added', (tester) async {
+    final visit1 = createVisit(id: 'visit-1', lat: 51.5, long: -0.1);
+
+    // Start with one visit
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit1],
+        currentLocation: const GeoLatLong(lat: 51.5, long: -0.12),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify initial marker count
+    var markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+    expect(markerLayer.markers.length, 2); // 1 visit + 1 current location
+
+    // Add another visit
+    final visit2 = createVisit(id: 'visit-2', lat: 51.6, long: -0.2);
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit1, visit2],
+        currentLocation: const GeoLatLong(lat: 51.5, long: -0.12),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify marker count increased
+    markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+    expect(markerLayer.markers.length, 3); // 2 visits + 1 current location
+  });
+
+  testWidgets('updates markers when visits are removed', (tester) async {
+    final visit1 = createVisit(id: 'visit-1', lat: 51.5, long: -0.1);
+    final visit2 = createVisit(id: 'visit-2', lat: 51.6, long: -0.2);
+
+    // Start with two visits
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit1, visit2],
+        currentLocation: const GeoLatLong(lat: 51.5, long: -0.12),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify initial marker count
+    var markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+    expect(markerLayer.markers.length, 3); // 2 visits + 1 current location
+
+    // Remove one visit
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit1],
+        currentLocation: const GeoLatLong(lat: 51.5, long: -0.12),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify marker count decreased
+    markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+    expect(markerLayer.markers.length, 2); // 1 visit + 1 current location
+  });
+
+  testWidgets('shows markers when visits are loaded after initial render', (
+    tester,
+  ) async {
+    // Start with empty visits (simulating loading state)
+    await tester.pumpWidget(
+      createWidget(
+        visits: const [],
+        currentLocation: const GeoLatLong(lat: 51.5, long: -0.12),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify no visit markers initially
+    var markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+    expect(markerLayer.markers.length, 1); // Only current location
+
+    // Simulate visits being loaded
+    final visit1 = createVisit(id: 'visit-1', lat: 51.5, long: -0.1);
+    final visit2 = createVisit(id: 'visit-2', lat: 51.6, long: -0.2);
+
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit1, visit2],
+        currentLocation: const GeoLatLong(lat: 51.5, long: -0.12),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify markers now appear
+    markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+    expect(markerLayer.markers.length, 3); // 2 visits + 1 current location
+    expect(
+      markerLayer.markers.where((m) => m.child is VisitMarker).length,
+      equals(2),
+    );
+  });
+
+  testWidgets('filters out visits without GPS coordinates', (tester) async {
+    final visitWithGps = createVisit(id: 'visit-1', lat: 51.5, long: -0.1);
+    final visitWithoutGps = Visit(
+      id: 'visit-2',
+      userId: 'user',
+      placeName: 'Place without GPS',
+      addedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    );
+
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visitWithGps, visitWithoutGps],
+        currentLocation: const GeoLatLong(lat: 51.5, long: -0.12),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Should only show marker for visit with GPS
+    final markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+    expect(markerLayer.markers.length, 2); // 1 visit + 1 current location
+    expect(
+      markerLayer.markers.where((m) => m.child is VisitMarker).length,
+      equals(1),
+    );
+  });
+
+  testWidgets('updates when current location changes', (tester) async {
+    final visit = createVisit(id: 'visit-1', lat: 51.5, long: -0.1);
+
+    // Start without current location
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify only visit marker
+    var markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+    expect(markerLayer.markers.length, 1); // Only visit marker
+    expect(
+      markerLayer.markers.any(
+        (marker) => marker.child is CurrentLocationMarker,
+      ),
+      isFalse,
+    );
+
+    // Add current location
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit],
+        currentLocation: const GeoLatLong(lat: 51.5, long: -0.12),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify both markers now
+    markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+    expect(markerLayer.markers.length, 2); // Visit + current location
+    expect(
+      markerLayer.markers.any(
+        (marker) => marker.child is CurrentLocationMarker,
+      ),
+      isTrue,
+    );
+  });
 }
 
 class _StubTileProvider extends TileProvider {
