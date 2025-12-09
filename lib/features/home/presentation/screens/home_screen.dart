@@ -76,7 +76,10 @@ class _HomeScreenState extends State<HomeScreen> {
         widget._visitRepository ??
         VisitRepository(firestore: FirebaseFirestore.instance);
     _locationService = widget._locationService ?? GeolocatorLocationService();
-    _loadVisits();
+    // Defer loading until after the first frame to avoid blocking main thread
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadVisits();
+    });
   }
 
   Future<void> _loadVisits() async {
