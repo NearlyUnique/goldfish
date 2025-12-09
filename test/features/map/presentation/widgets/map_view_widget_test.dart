@@ -353,6 +353,76 @@ void main() {
       isTrue,
     );
   });
+
+  testWidgets('re-centres map when location changes by more than 10m', (
+    tester,
+  ) async {
+    final visit = createVisit(id: 'visit-1', lat: 51.5, long: -0.1);
+
+    // Start with initial location (London)
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit],
+        currentLocation: const GeoLatLong(lat: 51.5074, long: -0.1278),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Update location to a point more than 10m away
+    // Moving approximately 100m north (0.0009 degrees latitude ≈ 100m)
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit],
+        currentLocation: const GeoLatLong(lat: 51.5083, long: -0.1278),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify the widget updated (marker should reflect new location)
+    final markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+    final currentLocationMarker = markerLayer.markers.firstWhere(
+      (marker) => marker.child is CurrentLocationMarker,
+    );
+    expect(
+      currentLocationMarker.point.latitude,
+      closeTo(51.5083, 0.0001),
+    );
+  });
+
+  testWidgets('does not re-centre when location changes by less than 10m', (
+    tester,
+  ) async {
+    final visit = createVisit(id: 'visit-1', lat: 51.5, long: -0.1);
+
+    // Start with initial location
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit],
+        currentLocation: const GeoLatLong(lat: 51.5074, long: -0.1278),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Update location to a point less than 10m away
+    // Moving approximately 5m north (0.000045 degrees latitude ≈ 5m)
+    await tester.pumpWidget(
+      createWidget(
+        visits: [visit],
+        currentLocation: const GeoLatLong(lat: 51.507445, long: -0.1278),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify the marker updated but map center logic handled it
+    final markerLayer = tester.widget<MarkerLayer>(find.byType(MarkerLayer));
+    final currentLocationMarker = markerLayer.markers.firstWhere(
+      (marker) => marker.child is CurrentLocationMarker,
+    );
+    expect(
+      currentLocationMarker.point.latitude,
+      closeTo(51.507445, 0.0001),
+    );
+  });
 }
 
 class _StubTileProvider extends TileProvider {

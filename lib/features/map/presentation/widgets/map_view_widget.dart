@@ -65,17 +65,62 @@ class MapViewWidget extends StatefulWidget {
 
 class _MapViewWidgetState extends State<MapViewWidget> {
   late final MapController _mapController;
+  GeoLatLong? _previousLocation;
+  static const double _distanceThresholdMeters = 10.0;
+  final Distance _distance = const Distance();
 
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
+    _previousLocation = widget.currentLocation;
+  }
+
+  @override
+  void didUpdateWidget(MapViewWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _handleLocationUpdate(oldWidget.currentLocation, widget.currentLocation);
   }
 
   @override
   void dispose() {
     _mapController.dispose();
     super.dispose();
+  }
+
+  /// Handles location updates and re-centres the map if the user has moved
+  /// more than 10 meters, preserving the current zoom and rotation.
+  void _handleLocationUpdate(
+    GeoLatLong? oldLocation,
+    GeoLatLong? newLocation,
+  ) {
+    // Only process if we have a new location
+    if (newLocation == null) {
+      _previousLocation = null;
+      return;
+    }
+
+    // If this is the first location, just store it
+    if (_previousLocation == null) {
+      _previousLocation = newLocation;
+      return;
+    }
+
+    // Calculate distance between previous and new location
+    final previousLatLng = _toLatLng(_previousLocation!);
+    final newLatLng = _toLatLng(newLocation);
+    final distanceMeters = _distance(previousLatLng, newLatLng);
+
+    // If moved more than threshold, re-centre the map
+    if (distanceMeters > _distanceThresholdMeters) {
+      // Get current camera state to preserve zoom and rotation
+      final currentCamera = _mapController.camera;
+      // Move to new location preserving zoom
+      _mapController.move(newLatLng, currentCamera.zoom);
+      // Restore rotation to preserve it
+      _mapController.rotate(currentCamera.rotation);
+      _previousLocation = newLocation;
+    }
   }
 
   @override
