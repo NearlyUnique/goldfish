@@ -98,11 +98,11 @@ void main() {
         // Act & Assert
         expect(
           () => authService.signInWithGoogle(),
-          throwsA(isA<GoogleSignInCancelledException>()),
+          throwsA(isA<SignInCancelledException>()),
         );
       });
 
-      test('throws FirebaseAuthException on Firebase error', () async {
+      test('throws AuthenticationException on Firebase error', () async {
         // Arrange
         final mockGoogleAccount = MockGoogleSignInAccount();
         final mockGoogleAuth = MockGoogleSignInAuthentication();
@@ -125,8 +125,16 @@ void main() {
         // Act & Assert
         expect(
           () => authService.signInWithGoogle(),
-          throwsA(isA<FirebaseAuthException>()),
+          throwsA(isA<AuthenticationException>()),
         );
+
+        try {
+          await authService.signInWithGoogle();
+        } on AuthenticationException catch (e) {
+          expect(e.code, equals('auth/error'));
+          expect(e.eventName, equals('auth_error'));
+          expect(e.provider, equals('firebase'));
+        }
       });
     });
 

@@ -14,7 +14,7 @@ class UserRepository {
   /// the Firebase testing guidance at
   /// https://firebase.flutter.dev/docs/testing/testing/.
   UserRepository({required FirebaseFirestore firestore})
-      : _firestore = firestore;
+    : _firestore = firestore;
 
   /// Underlying Firestore instance (real or fake).
   final FirebaseFirestore _firestore;
@@ -39,7 +39,7 @@ class UserRepository {
         'uid': user.uid,
         'error': e.toString(),
       });
-      throw UserDataException('Failed to create user: ${e.toString()}');
+      throw const UserDataException('firestore', 'user_create_error');
     }
   }
 
@@ -60,7 +60,7 @@ class UserRepository {
         'uid': user.uid,
         'error': e.toString(),
       });
-      throw UserDataException('Failed to update user: ${e.toString()}');
+      throw const UserDataException('firestore', 'user_update_error');
     }
   }
 
@@ -90,7 +90,7 @@ class UserRepository {
       return user;
     } catch (e) {
       AppLogger.error({'event': 'user_get', 'uid': uid, 'error': e.toString()});
-      throw UserDataException('Failed to get user: ${e.toString()}');
+      throw const UserDataException('firestore', 'user_get_error');
     }
   }
 
@@ -110,9 +110,7 @@ class UserRepository {
       if (e is UserDataException) {
         rethrow;
       }
-      throw UserDataException(
-        'Failed to create or update user: ${e.toString()}',
-      );
+      throw const UserDataException('firestore', 'user_create_or_update_error');
     }
   }
 }

@@ -15,9 +15,7 @@ void main() {
     });
 
     Widget createWidgetUnderTest() {
-      return MaterialApp(
-        home: SignInScreen(authNotifier: fakeAuthNotifier),
-      );
+      return MaterialApp(home: SignInScreen(authNotifier: fakeAuthNotifier));
     }
 
     testWidgets('displays app title and sign-in button', (tester) async {
@@ -35,6 +33,11 @@ void main() {
       var signInCalled = false;
       fakeAuthNotifier.onSignInWithGoogle = () async {
         signInCalled = true;
+        return const SignInResponse(
+          uid: 'test-user-id',
+          authState: AuthState.authenticated,
+          provider: 'google',
+        );
       };
       await tester.pumpWidget(createWidgetUnderTest());
 
@@ -48,13 +51,9 @@ void main() {
 
     testWidgets('shows loading state when signing in', (tester) async {
       // Arrange
-      final loadingNotifier = FakeAuthNotifier(
-        initialState: AuthState.loading,
-      );
+      final loadingNotifier = FakeAuthNotifier(initialState: AuthState.loading);
       await tester.pumpWidget(
-        MaterialApp(
-          home: SignInScreen(authNotifier: loadingNotifier),
-        ),
+        MaterialApp(home: SignInScreen(authNotifier: loadingNotifier)),
       );
 
       // Assert
@@ -79,6 +78,27 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('does not show error message on cancellation', (tester) async {
+      // Arrange
+      fakeAuthNotifier.onSignInWithGoogle = () async {
+        return const SignInResponse(
+          uid: null,
+          authState: AuthState.unauthenticated,
+          provider: 'google',
+        );
+      };
+      await tester.pumpWidget(createWidgetUnderTest());
+
+      // Act
+      await tester.tap(find.text('Sign in with Google'));
+      await tester.pump();
+
+      // Assert - no error message should be shown
+      expect(
+        find.text('An unexpected error occurred. Please try again.'),
+        findsNothing,
+      );
+    });
   });
 }
-

@@ -63,16 +63,40 @@ void main() {
         fakeAuthService.onAuthStateChanges = () => Stream.value(testUser);
 
         // Act
-        await authNotifier.signInWithGoogle();
+        final result = await authNotifier.signInWithGoogle();
 
         // Assert
         expect(signInCalled, isTrue);
+        expect(result.uid, equals(testUser.uid));
+        expect(result.authState, equals(AuthState.authenticated));
+      });
+
+      test('handles sign-in cancellation', () async {
+        // Arrange
+        fakeAuthService.onSignInWithGoogle = () async {
+          throw const SignInCancelledException('google');
+        };
+        fakeAuthService.onAuthStateChanges = () =>
+            Stream<firebase_auth.User?>.value(null);
+
+        // Act
+        final result = await authNotifier.signInWithGoogle();
+
+        // Assert
+        expect(result.uid, isNull);
+        expect(result.authState, equals(AuthState.unauthenticated));
+        // After cancellation, state should be unauthenticated
+        expect(authNotifier.state, equals(AuthState.unauthenticated));
       });
 
       test('handles sign-in error', () async {
         // Arrange
         fakeAuthService.onSignInWithGoogle = () async {
-          throw const GoogleSignInCancelledException();
+          throw const AuthenticationException(
+            'test_provider',
+            'test_event',
+            code: 'test-code',
+          );
         };
         fakeAuthService.onAuthStateChanges = () =>
             Stream<firebase_auth.User?>.value(null);
@@ -81,8 +105,10 @@ void main() {
         try {
           await authNotifier.signInWithGoogle();
           fail('Expected exception to be thrown');
-        } catch (e) {
-          expect(e, isA<GoogleSignInCancelledException>());
+        } on AuthenticationException catch (e) {
+          expect(e.code, equals('test-code'));
+          expect(e.eventName, equals('test_event'));
+          expect(e.provider, equals('test_provider'));
         }
         // After error, state should be unauthenticated
         expect(authNotifier.state, equals(AuthState.unauthenticated));
@@ -112,8 +138,8 @@ void main() {
 /// Test double for firebase_auth.User.
 class _TestUser implements firebase_auth.User {
   _TestUser({String? uid, String? email})
-      : _uid = uid ?? 'test_uid',
-        _email = email ?? 'test@example.com';
+    : _uid = uid ?? 'test_uid',
+      _email = email ?? 'test@example.com';
 
   final String _uid;
   final String? _email;
@@ -165,25 +191,25 @@ class _TestUser implements firebase_auth.User {
       throw UnimplementedError('Not used in tests');
 
   @override
-  Future<firebase_auth.IdTokenResult> getIdTokenResult(
-      [bool forceRefresh = false]) =>
-      throw UnimplementedError('Not used in tests');
+  Future<firebase_auth.IdTokenResult> getIdTokenResult([
+    bool forceRefresh = false,
+  ]) => throw UnimplementedError('Not used in tests');
 
   @override
   Future<firebase_auth.UserCredential> linkWithCredential(
-          firebase_auth.AuthCredential credential) =>
-      throw UnimplementedError('Not used in tests');
+    firebase_auth.AuthCredential credential,
+  ) => throw UnimplementedError('Not used in tests');
 
   @override
   Future<firebase_auth.ConfirmationResult> linkWithPhoneNumber(
-          String phoneNumber,
-          [firebase_auth.RecaptchaVerifier? verifier]) =>
-      throw UnimplementedError('Not used in tests');
+    String phoneNumber, [
+    firebase_auth.RecaptchaVerifier? verifier,
+  ]) => throw UnimplementedError('Not used in tests');
 
   @override
   Future<firebase_auth.UserCredential> linkWithPopup(
-          firebase_auth.AuthProvider provider) =>
-      throw UnimplementedError('Not used in tests');
+    firebase_auth.AuthProvider provider,
+  ) => throw UnimplementedError('Not used in tests');
 
   @override
   Future<void> linkWithRedirect(firebase_auth.AuthProvider provider) =>
@@ -191,28 +217,28 @@ class _TestUser implements firebase_auth.User {
 
   @override
   Future<firebase_auth.UserCredential> linkWithProvider(
-          firebase_auth.AuthProvider provider) =>
-      throw UnimplementedError('Not used in tests');
+    firebase_auth.AuthProvider provider,
+  ) => throw UnimplementedError('Not used in tests');
 
   @override
   Future<firebase_auth.UserCredential> reauthenticateWithCredential(
-          firebase_auth.AuthCredential credential) =>
-      throw UnimplementedError('Not used in tests');
+    firebase_auth.AuthCredential credential,
+  ) => throw UnimplementedError('Not used in tests');
 
   @override
   Future<firebase_auth.UserCredential> reauthenticateWithPopup(
-          firebase_auth.AuthProvider provider) =>
-      throw UnimplementedError('Not used in tests');
+    firebase_auth.AuthProvider provider,
+  ) => throw UnimplementedError('Not used in tests');
 
   @override
   Future<void> reauthenticateWithRedirect(
-          firebase_auth.AuthProvider provider) =>
-      throw UnimplementedError('Not used in tests');
+    firebase_auth.AuthProvider provider,
+  ) => throw UnimplementedError('Not used in tests');
 
   @override
   Future<firebase_auth.UserCredential> reauthenticateWithProvider(
-          firebase_auth.AuthProvider provider) =>
-      throw UnimplementedError('Not used in tests');
+    firebase_auth.AuthProvider provider,
+  ) => throw UnimplementedError('Not used in tests');
 
   @override
   Future<void> reload() => throw UnimplementedError('Not used in tests');
@@ -220,8 +246,7 @@ class _TestUser implements firebase_auth.User {
   @override
   Future<void> sendEmailVerification([
     firebase_auth.ActionCodeSettings? actionCodeSettings,
-  ]) =>
-      throw UnimplementedError('Not used in tests');
+  ]) => throw UnimplementedError('Not used in tests');
 
   @override
   Future<firebase_auth.User> unlink(String providerId) =>
@@ -241,24 +266,20 @@ class _TestUser implements firebase_auth.User {
 
   @override
   Future<void> updatePhoneNumber(
-          firebase_auth.PhoneAuthCredential phoneCredential) =>
-      throw UnimplementedError('Not used in tests');
+    firebase_auth.PhoneAuthCredential phoneCredential,
+  ) => throw UnimplementedError('Not used in tests');
 
   @override
   Future<void> updatePhotoURL(String? photoURL) =>
       throw UnimplementedError('Not used in tests');
 
   @override
-  Future<void> updateProfile({
-    String? displayName,
-    String? photoURL,
-  }) =>
+  Future<void> updateProfile({String? displayName, String? photoURL}) =>
       throw UnimplementedError('Not used in tests');
 
   @override
   Future<void> verifyBeforeUpdateEmail(
     String newEmail, [
     firebase_auth.ActionCodeSettings? actionCodeSettings,
-  ]) =>
-      throw UnimplementedError('Not used in tests');
+  ]) => throw UnimplementedError('Not used in tests');
 }

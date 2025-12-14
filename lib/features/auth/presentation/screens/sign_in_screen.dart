@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:goldfish/core/auth/auth_exceptions.dart';
 import 'package:goldfish/core/auth/auth_notifier.dart';
+import 'package:goldfish/core/logging/app_logger.dart';
 import 'package:goldfish/features/auth/presentation/widgets/google_sign_in_button.dart';
 
 /// Screen for user authentication via Google Sign-In.
@@ -26,16 +27,46 @@ class _SignInScreenState extends State<SignInScreen> {
     });
 
     try {
-      await widget.authNotifier.signInWithGoogle();
+      final response = await widget.authNotifier.signInWithGoogle();
+      if (response.authState == AuthState.unauthenticated) {
+        // User cancelled - log and don't show error
+        AppLogger.info({
+          'event': 'sign_in_cancelled',
+          'provider': response.provider,
+        });
+        setState(() {
+          _errorMessage = null;
+        });
+      } else if (response.authState == AuthState.authenticated) {
+        // Sign-in succeeded - log success
+        AppLogger.info({
+          'event': 'google_sign_in_success',
+          'uid': response.uid,
+        });
+      }
       // Navigation will be handled by the router based on auth state
-    } on GoogleSignInCancelledException {
-      // User cancelled, don't show error
+    } on AuthenticationException catch (e) {
+      // Log authentication errors with diagnostic information
+      final logData = <String, dynamic>{
+        'event': e.eventName,
+        'provider': e.provider,
+      };
+      if (e.code != null) {
+        logData['code'] = e.code;
+      }
+      if (e.userId != null) {
+        logData['uid'] = e.userId;
+      }
+      AppLogger.error(logData);
+
       setState(() {
-        _errorMessage = null;
+        _errorMessage = e.displayMessage;
       });
     } on AuthException catch (e) {
+      // Log other auth exceptions
+      AppLogger.error({'event': e.eventName, 'provider': e.provider});
       setState(() {
-        _errorMessage = e.message;
+        _errorMessage = e.displayMessage;
       });
     } on Exception {
       setState(() {
@@ -65,16 +96,16 @@ class _SignInScreenState extends State<SignInScreen> {
                 Text(
                   'Goldfish',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Sign in to continue',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 48),
@@ -97,8 +128,9 @@ class _SignInScreenState extends State<SignInScreen> {
                           child: Text(
                             _errorMessage!,
                             style: TextStyle(
-                              color:
-                                  Theme.of(context).colorScheme.onErrorContainer,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onErrorContainer,
                             ),
                           ),
                         ),
@@ -126,4 +158,3 @@ class _SignInScreenState extends State<SignInScreen> {
     );
   }
 }
-

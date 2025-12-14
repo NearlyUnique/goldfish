@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:goldfish/core/auth/auth_exceptions.dart';
 import 'package:goldfish/core/auth/auth_service.dart';
 
 /// Fake implementation of [AuthService] for testing.
@@ -18,11 +19,10 @@ class FakeAuthService implements AuthService {
     firebase_auth.User? Function()? onCurrentUser,
     Future<firebase_auth.User> Function()? onSignInWithGoogle,
     Future<void> Function()? onSignOut,
-  })  : onAuthStateChanges =
-            onAuthStateChanges ?? _defaultAuthStateChanges,
-        onCurrentUser = onCurrentUser ?? _defaultCurrentUser,
-        onSignInWithGoogle = onSignInWithGoogle ?? _defaultSignInWithGoogle,
-        onSignOut = onSignOut ?? _defaultSignOut;
+  }) : onAuthStateChanges = onAuthStateChanges ?? _defaultAuthStateChanges,
+       onCurrentUser = onCurrentUser ?? _defaultCurrentUser,
+       onSignInWithGoogle = onSignInWithGoogle ?? _defaultSignInWithGoogle,
+       onSignOut = onSignOut ?? _defaultSignOut;
 
   /// Handler for [authStateChanges].
   Stream<firebase_auth.User?> Function() onAuthStateChanges;
@@ -63,5 +63,3 @@ class FakeAuthService implements AuthService {
     // No-op by default
   }
 }
-
-

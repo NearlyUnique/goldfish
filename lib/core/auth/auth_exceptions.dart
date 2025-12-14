@@ -1,47 +1,65 @@
 /// Base exception for authentication-related errors.
 abstract class AuthException implements Exception {
-  /// Creates a new [AuthException] with the given [message].
-  const AuthException(this.message);
+  /// Creates a new [AuthException] with the given [provider] and [eventName].
+  const AuthException(this.provider, this.eventName);
 
-  /// The error message.
-  final String message;
+  /// The provider name (e.g., 'google', 'firebase', 'firestore').
+  final String provider;
+
+  /// The event name for logging purposes (e.g., 'sign_in_failed').
+  final String eventName;
+
+  /// Gets the error message in the format 'provider: eventName'.
+  String get displayMessage => '$provider: $eventName';
 
   @override
-  String toString() => message;
+  String toString() => displayMessage;
 }
 
-/// Exception thrown when Google Sign-In is cancelled by the user.
-class GoogleSignInCancelledException extends AuthException {
-  /// Creates a new [GoogleSignInCancelledException].
-  const GoogleSignInCancelledException()
-    : super('Google Sign-In was cancelled');
+/// Exception thrown when sign-in is cancelled by the user.
+class SignInCancelledException extends AuthException {
+  /// Creates a new [SignInCancelledException].
+  const SignInCancelledException(String provider)
+    : super(provider, 'sign_in_cancelled');
 }
 
-/// Exception thrown when Google Sign-In fails due to network issues.
-class GoogleSignInNetworkException extends AuthException {
-  /// Creates a new [GoogleSignInNetworkException].
-  const GoogleSignInNetworkException()
-    : super('Network error during Google Sign-In');
+/// Exception thrown when sign-in fails due to network issues.
+class SignInNetworkException extends AuthException {
+  /// Creates a new [SignInNetworkException].
+  const SignInNetworkException(String provider)
+    : super(provider, 'sign_in_network_error');
 }
 
-/// Exception thrown when Google Sign-In fails due to permission denial.
-class GoogleSignInPermissionException extends AuthException {
-  /// Creates a new [GoogleSignInPermissionException].
-  const GoogleSignInPermissionException()
-    : super('Permission denied for Google Sign-In');
+/// Exception thrown when sign-in fails due to permission denial.
+class SignInPermissionException extends AuthException {
+  /// Creates a new [SignInPermissionException].
+  const SignInPermissionException(String provider)
+    : super(provider, 'sign_in_permission_denied');
 }
 
-/// Exception thrown when Firebase authentication fails.
-class FirebaseAuthException extends AuthException {
-  /// Creates a new [FirebaseAuthException] with the given [message] and [code].
-  const FirebaseAuthException(super.message, this.code);
+/// Exception thrown when authentication fails.
+///
+/// This is a domain exception that wraps underlying authentication failures
+/// (e.g., from Firebase) without exposing implementation details.
+class AuthenticationException extends AuthException {
+  /// Creates a new [AuthenticationException] with the given [provider], [eventName],
+  /// and optional [code] and [userId] for diagnostics.
+  const AuthenticationException(
+    super.provider,
+    super.eventName, {
+    this.code,
+    this.userId,
+  });
 
-  /// The Firebase error code.
+  /// The error code, if available (e.g., 'auth/network-request-failed').
   final String? code;
+
+  /// The user ID, if available, for diagnostic purposes.
+  final String? userId;
 }
 
 /// Exception thrown when user data operations fail.
 class UserDataException extends AuthException {
-  /// Creates a new [UserDataException] with the given [message].
-  const UserDataException(super.message);
+  /// Creates a new [UserDataException] with the given [provider] and [eventName].
+  const UserDataException(super.provider, super.eventName);
 }

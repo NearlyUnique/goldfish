@@ -5,3 +5,4 @@ alwaysApply: true
 2. Do not guess or speculate
 3. All code must have tests, a task can only be stated to be complete if all tests have been run without error
 4. Any linting errors must be dealt with within the task
+5. low level packages, for example repository should not log errors, they should throw exceptions with sufficient detail that outer layers may choose to log the error. Do not throw and log, one or the other.
