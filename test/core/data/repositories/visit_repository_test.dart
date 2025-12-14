@@ -28,13 +28,15 @@ void main() {
         );
 
         // Act
-        final visitId = await visitRepository.createVisit(visit);
+        final result = await visitRepository.createVisit(visit);
 
         // Assert
-        expect(visitId, isNotEmpty);
+        expect(result.visitId, isNotEmpty);
+        expect(result.userId, equals('user123'));
+        expect(result.eventName, equals('visit_create'));
         final snapshot = await fakeFirestore
             .collection('visits')
-            .doc(visitId)
+            .doc(result.visitId)
             .get();
 
         expect(snapshot.exists, isTrue);
@@ -56,10 +58,12 @@ void main() {
         );
 
         // Act
-        final visitId = await visitRepository.createVisit(visit);
+        final result = await visitRepository.createVisit(visit);
 
         // Assert
-        expect(visitId, equals('custom-visit-id'));
+        expect(result.visitId, equals('custom-visit-id'));
+        expect(result.userId, equals('user123'));
+        expect(result.eventName, equals('visit_create'));
         final snapshot = await fakeFirestore
             .collection('visits')
             .doc('custom-visit-id')
@@ -92,13 +96,13 @@ void main() {
         );
 
         // Act
-        final visitId = await visitRepository.createVisit(visit);
+        final result = await visitRepository.createVisit(visit);
 
         // Assert
-        expect(visitId, isNotEmpty);
+        expect(result.visitId, isNotEmpty);
         final snapshot = await fakeFirestore
             .collection('visits')
-            .doc(visitId)
+            .doc(result.visitId)
             .get();
 
         expect(snapshot.exists, isTrue);
@@ -123,7 +127,16 @@ void main() {
         // Act & Assert
         expect(
           () => visitRepository.createVisit(visit),
-          throwsA(isA<VisitDataException>()),
+          throwsA(
+            isA<VisitDataException>()
+                .having((e) => e.provider, 'provider', 'firestore')
+                .having(
+                  (e) => e.eventName,
+                  'eventName',
+                  'visit_validation_error',
+                )
+                .having((e) => e.userId, 'userId', ''),
+          ),
         );
       });
 
@@ -141,7 +154,16 @@ void main() {
         // Act & Assert
         expect(
           () => visitRepository.createVisit(visit),
-          throwsA(isA<VisitDataException>()),
+          throwsA(
+            isA<VisitDataException>()
+                .having((e) => e.provider, 'provider', 'firestore')
+                .having(
+                  (e) => e.eventName,
+                  'eventName',
+                  'visit_validation_error',
+                )
+                .having((e) => e.userId, 'userId', 'user123'),
+          ),
         );
       });
     });
@@ -266,21 +288,35 @@ void main() {
         });
 
         // Act
-        final visit = await visitRepository.getVisitById('visit123', 'user123');
+        final result = await visitRepository.getVisitById(
+          'visit123',
+          'user123',
+        );
 
         // Assert
-        expect(visit, isNotNull);
-        expect(visit?.id, equals('visit123'));
-        expect(visit?.userId, equals('user123'));
-        expect(visit?.placeName, equals('Test Place'));
+        expect(result.visit, isNotNull);
+        expect(result.visitId, equals('visit123'));
+        expect(result.userId, equals('user123'));
+        expect(result.eventName, equals('visit_get'));
+        expect(result.succeeded, isTrue);
+        expect(result.visit?.id, equals('visit123'));
+        expect(result.visit?.userId, equals('user123'));
+        expect(result.visit?.placeName, equals('Test Place'));
       });
 
       test('returns null when visit does not exist', () async {
         // Act
-        final visit = await visitRepository.getVisitById('nonexistent', 'user123');
+        final result = await visitRepository.getVisitById(
+          'nonexistent',
+          'user123',
+        );
 
         // Assert
-        expect(visit, isNull);
+        expect(result.visit, isNull);
+        expect(result.visitId, equals('nonexistent'));
+        expect(result.userId, equals('user123'));
+        expect(result.eventName, equals('visit_get_not_found'));
+        expect(result.succeeded, isFalse);
       });
 
       test('returns null when visit belongs to different user', () async {
@@ -296,10 +332,17 @@ void main() {
         });
 
         // Act
-        final visit = await visitRepository.getVisitById('visit123', 'user123');
+        final result = await visitRepository.getVisitById(
+          'visit123',
+          'user123',
+        );
 
         // Assert
-        expect(visit, isNull);
+        expect(result.visit, isNull);
+        expect(result.visitId, equals('visit123'));
+        expect(result.userId, equals('user123'));
+        expect(result.eventName, equals('visit_get_ownership_mismatch'));
+        expect(result.succeeded, isFalse);
       });
 
       test('returns visit with all optional fields', () async {
@@ -324,16 +367,18 @@ void main() {
         });
 
         // Act
-        final visit = await visitRepository.getVisitById('visit123', 'user123');
+        final result = await visitRepository.getVisitById(
+          'visit123',
+          'user123',
+        );
 
         // Assert
-        expect(visit, isNotNull);
-        expect(visit?.placeAddress, isNotNull);
-        expect(visit?.gpsRecorded, isNotNull);
-        expect(visit?.gpsKnown, isNotNull);
-        expect(visit?.placeType, isNotNull);
+        expect(result.visit, isNotNull);
+        expect(result.visit?.placeAddress, isNotNull);
+        expect(result.visit?.gpsRecorded, isNotNull);
+        expect(result.visit?.gpsKnown, isNotNull);
+        expect(result.visit?.placeType, isNotNull);
       });
     });
   });
 }
-

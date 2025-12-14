@@ -1,4 +1,5 @@
 import 'package:goldfish/core/data/models/visit_model.dart';
+import 'package:goldfish/core/data/repositories/visit_repository.dart';
 
 /// Fake implementation of [VisitRepository] for testing.
 ///
@@ -14,44 +15,53 @@ class FakeVisitRepository {
   /// Optionally accepts function handlers for each method. If not provided,
   /// uses default implementations that return safe defaults.
   FakeVisitRepository({
-    Future<String> Function(Visit visit)? onCreateVisit,
+    Future<VisitResult> Function(Visit visit)? onCreateVisit,
     Future<List<Visit>> Function(String userId)? onGetUserVisits,
-    Future<Visit?> Function(String id, String userId)? onGetVisitById,
-  })  : onCreateVisit = onCreateVisit ?? _defaultCreateVisit,
-        onGetUserVisits = onGetUserVisits ?? _defaultGetUserVisits,
-        onGetVisitById = onGetVisitById ?? _defaultGetVisitById;
+    Future<VisitResult> Function(String id, String userId)? onGetVisitById,
+  }) : onCreateVisit = onCreateVisit ?? _defaultCreateVisit,
+       onGetUserVisits = onGetUserVisits ?? _defaultGetUserVisits,
+       onGetVisitById = onGetVisitById ?? _defaultGetVisitById;
 
   /// Handler for [createVisit].
-  Future<String> Function(Visit visit) onCreateVisit;
+  Future<VisitResult> Function(Visit visit) onCreateVisit;
 
   /// Handler for [getUserVisits].
   Future<List<Visit>> Function(String userId) onGetUserVisits;
 
   /// Handler for [getVisitById].
-  Future<Visit?> Function(String id, String userId) onGetVisitById;
+  Future<VisitResult> Function(String id, String userId) onGetVisitById;
 
   /// Creates a visit. Matches [VisitRepository.createVisit] interface.
-  Future<String> createVisit(Visit visit) => onCreateVisit(visit);
+  Future<VisitResult> createVisit(Visit visit) => onCreateVisit(visit);
 
   /// Gets user visits. Matches [VisitRepository.getUserVisits] interface.
-  Future<List<Visit>> getUserVisits(String userId) =>
-      onGetUserVisits(userId);
+  Future<List<Visit>> getUserVisits(String userId) => onGetUserVisits(userId);
 
   /// Gets visit by ID. Matches [VisitRepository.getVisitById] interface.
-  Future<Visit?> getVisitById(String id, String userId) =>
+  Future<VisitResult> getVisitById(String id, String userId) =>
       onGetVisitById(id, userId);
 
   // Default implementations
-  static Future<String> _defaultCreateVisit(Visit visit) async {
-    return 'fake-visit-id';
+  static Future<VisitResult> _defaultCreateVisit(Visit visit) async {
+    return VisitResult(
+      eventName: 'visit_create',
+      visitId: 'fake-visit-id',
+      userId: visit.userId,
+    );
   }
 
   static Future<List<Visit>> _defaultGetUserVisits(String userId) async {
     return [];
   }
 
-  static Future<Visit?> _defaultGetVisitById(String id, String userId) async {
-    return null;
+  static Future<VisitResult> _defaultGetVisitById(
+    String id,
+    String userId,
+  ) async {
+    return VisitResult(
+      eventName: 'visit_get_not_found',
+      visitId: id,
+      userId: userId,
+    );
   }
 }
-

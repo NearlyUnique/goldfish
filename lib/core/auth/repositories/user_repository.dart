@@ -96,10 +96,7 @@ class UserRepository {
   /// Throws [UserDataException] if the operation fails.
   Future<UserResult> getUser(String uid) async {
     try {
-      final doc = await (_firestore as dynamic)
-          .collection(_usersCollection)
-          .doc(uid)
-          .get();
+      final doc = await _firestore.collection(_usersCollection).doc(uid).get();
 
       if (!doc.exists) {
         return UserResult(eventName: 'user_get_not_found', uid: uid);
@@ -109,7 +106,7 @@ class UserRepository {
       // simple test doubles (duck-typed objects with `id` and `data()`).
       final user = UserModel.fromMap(
         (doc.data() as Map<String, dynamic>),
-        doc.id as String,
+        doc.id,
       );
       return UserResult(eventName: 'user_get', uid: uid, user: user);
     } catch (e) {

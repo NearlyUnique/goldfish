@@ -293,7 +293,7 @@ class RecordVisitViewModel extends ChangeNotifier {
         'error': e.toString(),
         'user_id': user.uid,
       });
-      _setError('Failed to save visit: ${e.message}');
+      _setError('Failed to save visit: ${e.displayMessage}');
       _setSaving(false);
       rethrow;
     } on Exception catch (e) {
@@ -304,7 +304,12 @@ class RecordVisitViewModel extends ChangeNotifier {
       });
       _setError('Failed to save visit: ${e.toString()}');
       _setSaving(false);
-      throw VisitDataException('Failed to save visit: ${e.toString()}');
+      throw VisitDataException(
+        'firestore',
+        'record_visit_save_error',
+        userId: user.uid,
+        innerError: e,
+      );
     }
   }
 
