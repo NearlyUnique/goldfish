@@ -280,7 +280,7 @@ void main() {
           onIsLocationServiceEnabled: () async => true,
           onCheckPermission: () async => LocationPermission.whileInUse,
           onGetCurrentPosition: ({LocationSettings? locationSettings}) async {
-            throw LocationServiceDisabledException();
+            throw const LocationServiceDisabledException();
           },
         );
         final service = createLocationServiceWithWrapper(wrapper);

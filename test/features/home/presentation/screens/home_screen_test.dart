@@ -260,7 +260,7 @@ void main() {
       // Arrange
       when(
         () => mockVisitRepository.getUserVisits(any()),
-      ).thenThrow(VisitDataException('Failed to load visits'));
+      ).thenThrow(const VisitDataException('Failed to load visits'));
 
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
@@ -279,7 +279,7 @@ void main() {
       when(() => mockVisitRepository.getUserVisits(any())).thenAnswer((_) {
         callCount++;
         if (callCount == 1) {
-          throw VisitDataException('Failed to load visits');
+          throw const VisitDataException('Failed to load visits');
         }
         return Future.value(<Visit>[]);
       });

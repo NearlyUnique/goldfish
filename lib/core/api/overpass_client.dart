@@ -160,7 +160,7 @@ class OverpassClient {
     // Filters by common place tags: amenity, tourism, historic, leisure,
     // shop, craft, office, public_transport
     // Note: The regex pattern uses ~ operator to match tag keys
-    final filter =
+    const filter =
         '[~"^(amenity|tourism|historic|leisure|shop|craft|office|public_transport)\$"~"."]';
     final query =
         '''[out:json][timeout:25];

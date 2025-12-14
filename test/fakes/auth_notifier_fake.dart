@@ -17,15 +17,15 @@ class FakeAuthNotifier extends ChangeNotifier implements AuthNotifier {
     String? initialErrorMessage,
     Future<void> Function()? onSignInWithGoogle,
     Future<void> Function()? onSignOut,
-  })  : _state = initialState ?? AuthState.unauthenticated,
-        _user = initialUser,
-        _errorMessage = initialErrorMessage,
-        onSignInWithGoogle = onSignInWithGoogle ?? _defaultSignInWithGoogle,
-        onSignOut = onSignOut ?? _defaultSignOut;
+  }) : _state = initialState ?? AuthState.unauthenticated,
+       _user = initialUser,
+       _errorMessage = initialErrorMessage,
+       onSignInWithGoogle = onSignInWithGoogle ?? _defaultSignInWithGoogle,
+       onSignOut = onSignOut ?? _defaultSignOut;
 
-  AuthState _state;
-  firebase_auth.User? _user;
-  String? _errorMessage;
+  final AuthState _state;
+  final firebase_auth.User? _user;
+  final String? _errorMessage;
 
   /// Handler for [signInWithGoogle].
   Future<void> Function() onSignInWithGoogle;
@@ -63,5 +63,3 @@ class FakeAuthNotifier extends ChangeNotifier implements AuthNotifier {
     // No-op by default
   }
 }
-
-
