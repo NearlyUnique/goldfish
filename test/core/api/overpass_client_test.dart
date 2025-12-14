@@ -134,7 +134,15 @@ void main() {
         // Act & Assert
         expect(
           () => mockOverpassClient.findNearbyPlaces(45.0, -90.0),
-          throwsA(isA<OverpassException>()),
+          throwsA(
+            predicate<OverpassException>(
+              (e) =>
+                  e.eventName == 'overpass_api_error' &&
+                  e.remark == 'Runtime error: Query timed out' &&
+                  e.latitude == 45.0 &&
+                  e.longitude == -90.0,
+            ),
+          ),
         );
       });
 
@@ -147,33 +155,48 @@ void main() {
         // Act & Assert
         expect(
           () => mockOverpassClient.findNearbyPlaces(45.0, -90.0),
-          throwsA(isA<OverpassException>()),
-        );
-      });
-
-      test('throws OverpassException on 400 Bad Request with response body in error', () async {
-        // Arrange: Simulate a 400 error with HTML error response (like Overpass API returns)
-        const errorBody = '''<p>The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.</p>
-
-<p><strong style="color:#FF0000">Error</strong>: line 1: parse error: ';' expected - ')' found. </p>''';
-
-        final mockOverpassClient = createMockOverpassClient(
-          response: http.Response(errorBody, 400),
-        );
-
-        // Act & Assert
-        expect(
-          () => mockOverpassClient.findNearbyPlaces(45.0, -90.0),
           throwsA(
             predicate<OverpassException>(
               (e) =>
-                  e.statusCode == 400 &&
-                  e.message.contains('400') &&
-                  e.message.contains(errorBody),
+                  e.eventName == 'overpass_api_error' &&
+                  e.statusCode == 500 &&
+                  e.responseBody == 'Internal Server Error' &&
+                  e.latitude == 45.0 &&
+                  e.longitude == -90.0,
             ),
           ),
         );
       });
+
+      test(
+        'throws OverpassException on 400 Bad Request with response body in error',
+        () async {
+          // Arrange: Simulate a 400 error with HTML error response (like Overpass API returns)
+          const errorBody =
+              '''<p>The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.</p>
+
+<p><strong style="color:#FF0000">Error</strong>: line 1: parse error: ';' expected - ')' found. </p>''';
+
+          final mockOverpassClient = createMockOverpassClient(
+            response: http.Response(errorBody, 400),
+          );
+
+          // Act & Assert
+          expect(
+            () => mockOverpassClient.findNearbyPlaces(45.0, -90.0),
+            throwsA(
+              predicate<OverpassException>(
+                (e) =>
+                    e.eventName == 'overpass_api_error' &&
+                    e.statusCode == 400 &&
+                    e.responseBody == errorBody &&
+                    e.latitude == 45.0 &&
+                    e.longitude == -90.0,
+              ),
+            ),
+          );
+        },
+      );
 
       test('throws OverpassException on empty response', () async {
         // Arrange
@@ -184,7 +207,14 @@ void main() {
         // Act & Assert
         expect(
           () => mockOverpassClient.findNearbyPlaces(45.0, -90.0),
-          throwsA(isA<OverpassException>()),
+          throwsA(
+            predicate<OverpassException>(
+              (e) =>
+                  e.eventName == 'overpass_api_empty_response' &&
+                  e.latitude == 45.0 &&
+                  e.longitude == -90.0,
+            ),
+          ),
         );
       });
 
@@ -197,7 +227,15 @@ void main() {
         // Act & Assert
         expect(
           () => mockOverpassClient.findNearbyPlaces(45.0, -90.0),
-          throwsA(isA<OverpassException>()),
+          throwsA(
+            predicate<OverpassException>(
+              (e) =>
+                  e.eventName == 'overpass_api_parse_error' &&
+                  e.latitude == 45.0 &&
+                  e.longitude == -90.0 &&
+                  e.innerError is FormatException,
+            ),
+          ),
         );
       });
 
@@ -313,7 +351,11 @@ void main() {
         expect(query, contains('(\n'));
         expect(query, contains(');\n'));
         // Verify no double closing parentheses (the bug we fixed)
-        expect(query.split('))'), hasLength(1), reason: 'Query should not have double closing parentheses');
+        expect(
+          query.split('))'),
+          hasLength(1),
+          reason: 'Query should not have double closing parentheses',
+        );
       });
     });
   });

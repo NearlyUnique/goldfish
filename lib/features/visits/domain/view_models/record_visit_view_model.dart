@@ -218,7 +218,7 @@ class RecordVisitViewModel extends ChangeNotifier {
         'latitude': latitude,
         'longitude': longitude,
       });
-      _setError('Unable to fetch place suggestions: ${e.message}');
+      _setError('Unable to fetch place suggestions: ${e.eventName}');
       _setLoadingSuggestions(false);
     } on Exception catch (e) {
       AppLogger.error({

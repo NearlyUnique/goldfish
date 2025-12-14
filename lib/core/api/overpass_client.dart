@@ -2,22 +2,48 @@ import 'dart:convert';
 
 import 'package:goldfish/core/api/http_client.dart';
 import 'package:goldfish/core/data/models/place_suggestion_model.dart';
-import 'package:goldfish/core/logging/app_logger.dart';
 import 'package:http/http.dart' as http;
 
 /// Exception thrown when Overpass API returns an error.
 class OverpassException implements Exception {
-  /// Creates a new [OverpassException].
-  const OverpassException(this.message, [this.statusCode]);
+  /// Creates a new [OverpassException] with the given [eventName] and optional
+  /// context fields for logging.
+  const OverpassException(
+    this.eventName, {
+    this.statusCode,
+    this.responseBody,
+    this.remark,
+    this.latitude,
+    this.longitude,
+    this.innerError,
+  });
 
-  /// The error message from the API.
-  final String message;
+  /// The event name for logging purposes (e.g., 'overpass_api_error').
+  final String eventName;
 
   /// The HTTP status code, if available.
   final int? statusCode;
 
+  /// The response body from the API, if available.
+  final String? responseBody;
+
+  /// The remark/error message from Overpass API, if available.
+  final String? remark;
+
+  /// The latitude used in the query, if available.
+  final double? latitude;
+
+  /// The longitude used in the query, if available.
+  final double? longitude;
+
+  /// The underlying error, if available (e.g., FormatException).
+  final Object? innerError;
+
+  /// Gets the error message in the format 'overpass: eventName'.
+  String get displayMessage => 'overpass: $eventName';
+
   @override
-  String toString() => 'OverpassException: $message';
+  String toString() => displayMessage;
 }
 
 /// Client for querying the Overpass API to find nearby places.
@@ -66,27 +92,22 @@ class OverpassClient {
       );
 
       if (response.statusCode != 200) {
-        AppLogger.error({
-          'event': 'overpass_api_error',
-          'status_code': response.statusCode,
-          'response_body': response.body,
-          'latitude': latitude,
-          'longitude': longitude,
-        });
         throw OverpassException(
-          'Overpass API returned status ${response.statusCode}: ${response.body}',
-          response.statusCode,
+          'overpass_api_error',
+          statusCode: response.statusCode,
+          responseBody: response.body,
+          latitude: latitude,
+          longitude: longitude,
         );
       }
 
       final responseBody = response.body;
       if (responseBody.isEmpty) {
-        AppLogger.error({
-          'event': 'overpass_api_empty_response',
-          'latitude': latitude,
-          'longitude': longitude,
-        });
-        throw const OverpassException('Overpass API returned empty response');
+        throw OverpassException(
+          'overpass_api_empty_response',
+          latitude: latitude,
+          longitude: longitude,
+        );
       }
 
       final jsonResponse = jsonDecode(responseBody) as Map<String, dynamic>;
@@ -94,25 +115,19 @@ class OverpassClient {
       // Check for Overpass API errors in the response
       if (jsonResponse.containsKey('remark')) {
         final remark = jsonResponse['remark'] as String?;
-        AppLogger.error({
-          'event': 'overpass_api_error',
-          'remark': remark ?? 'Unknown error',
-          'latitude': latitude,
-          'longitude': longitude,
-        });
         throw OverpassException(
-          'Overpass API error: ${remark ?? 'Unknown error'}',
+          'overpass_api_error',
+          remark: remark,
+          latitude: latitude,
+          longitude: longitude,
         );
       }
 
       if (!jsonResponse.containsKey('elements')) {
-        AppLogger.error({
-          'event': 'overpass_api_invalid_response',
-          'latitude': latitude,
-          'longitude': longitude,
-        });
-        throw const OverpassException(
-          'Overpass API response missing elements array',
+        throw OverpassException(
+          'overpass_api_invalid_response',
+          latitude: latitude,
+          longitude: longitude,
         );
       }
 
@@ -120,33 +135,25 @@ class OverpassClient {
 
       return suggestions;
     } on FormatException catch (e) {
-      AppLogger.error({
-        'event': 'overpass_api_parse_error',
-        'error': e.toString(),
-        'latitude': latitude,
-        'longitude': longitude,
-      });
-      throw OverpassException('Failed to parse Overpass API response: $e');
-    } on http.ClientException catch (e) {
-      AppLogger.error({
-        'event': 'overpass_api_network_error',
-        'error': e.toString(),
-        'latitude': latitude,
-        'longitude': longitude,
-      });
+      throw OverpassException(
+        'overpass_api_parse_error',
+        latitude: latitude,
+        longitude: longitude,
+        innerError: e,
+      );
+    } on http.ClientException {
       // Re-throw network errors as-is
       rethrow;
     } on OverpassException {
-      // Already logged above, re-throw as-is
+      // Re-throw as-is
       rethrow;
     } catch (e) {
-      AppLogger.error({
-        'event': 'overpass_api_unexpected_error',
-        'error': e.toString(),
-        'latitude': latitude,
-        'longitude': longitude,
-      });
-      throw OverpassException('Unexpected error: $e');
+      throw OverpassException(
+        'overpass_api_unexpected_error',
+        latitude: latitude,
+        longitude: longitude,
+        innerError: e,
+      );
     }
   }
 
