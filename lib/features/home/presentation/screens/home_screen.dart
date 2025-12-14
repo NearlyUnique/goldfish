@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
       AppLogger.error({
         'event': 'home_load_visits_error',
         'user_id': user.uid,
-        'error': e.toString(),
+        'error': e,
       });
       if (mounted) {
         setState(() {
@@ -245,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onError: (error) {
             AppLogger.error({
               'event': 'home_location_stream_error',
-              'error': error.toString(),
+              'error': error,
             });
             if (mounted) {
               setState(() {
@@ -280,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen> {
           } catch (e) {
             AppLogger.error({
               'event': 'home_location_timer_update_error',
-              'error': e.toString(),
+              'error': e,
             });
             // Don't update error state on timer failures - stream might still work
           }
@@ -289,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       AppLogger.error({
         'event': 'home_start_location_tracking_error',
-        'error': e.toString(),
+        'error': e,
       });
       if (mounted) {
         setState(() {
@@ -502,7 +502,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (e) {
       AppLogger.error({
         'event': 'home_open_maps_error',
-        'error': e.toString(),
+        'error': e,
         'location': location.toString(),
       });
       if (mounted) {

@@ -147,7 +147,7 @@ class GeolocatorLocationService implements LocationService {
     } catch (e) {
       AppLogger.error({
         'event': 'location_permission_request_error',
-        'error': e.toString(),
+        'error': e,
       });
       // Don't throw - return false gracefully
       return false;
@@ -169,10 +169,7 @@ class GeolocatorLocationService implements LocationService {
 
       return hasPermission;
     } catch (e) {
-      AppLogger.error({
-        'event': 'location_permission_check_error',
-        'error': e.toString(),
-      });
+      AppLogger.error({'event': 'location_permission_check_error', 'error': e});
       // Don't throw - return false gracefully
       return false;
     }
@@ -219,7 +216,7 @@ class GeolocatorLocationService implements LocationService {
       AppLogger.error({
         'event': 'location_get_current',
         'status': 'location_services_disabled',
-        'error': e.toString(),
+        'error': e,
       });
       // Don't throw - return null gracefully
       return null;
@@ -227,7 +224,7 @@ class GeolocatorLocationService implements LocationService {
       AppLogger.error({
         'event': 'location_get_current',
         'status': 'timeout',
-        'error': e.toString(),
+        'error': e,
       });
       // Don't throw - return null gracefully
       return null;
@@ -235,7 +232,7 @@ class GeolocatorLocationService implements LocationService {
       AppLogger.error({
         'event': 'location_get_current',
         'status': 'error',
-        'error': e.toString(),
+        'error': e,
       });
       // Don't throw - return null gracefully
       return null;
@@ -252,21 +249,15 @@ class GeolocatorLocationService implements LocationService {
         distanceFilter: 10, // Update when moved 10 meters
       );
 
-      return _geolocatorWrapper.getPositionStream(
-        locationSettings: streamSettings,
-      ).handleError((error) {
-        AppLogger.error({
-          'event': 'location_stream_error',
-          'error': error.toString(),
-        });
-        // Re-throw so listeners can handle it
-        throw error;
-      });
+      return _geolocatorWrapper
+          .getPositionStream(locationSettings: streamSettings)
+          .handleError((error) {
+            AppLogger.error({'event': 'location_stream_error', 'error': error});
+            // Re-throw so listeners can handle it
+            throw error;
+          });
     } catch (e) {
-      AppLogger.error({
-        'event': 'location_stream_create_error',
-        'error': e.toString(),
-      });
+      AppLogger.error({'event': 'location_stream_create_error', 'error': e});
       return null;
     }
   }
@@ -283,7 +274,7 @@ class GeolocatorLocationService implements LocationService {
     } catch (e) {
       AppLogger.error({
         'event': 'location_service_enabled_check_error',
-        'error': e.toString(),
+        'error': e,
       });
       // Don't throw - return false gracefully
       return false;
@@ -305,7 +296,7 @@ class GeolocatorLocationService implements LocationService {
     } catch (e) {
       AppLogger.error({
         'event': 'location_permission_denied_forever_check_error',
-        'error': e.toString(),
+        'error': e,
       });
       // Don't throw - return false gracefully
       return false;
@@ -316,15 +307,12 @@ class GeolocatorLocationService implements LocationService {
   Future<bool> openAppSettings() async {
     try {
       final opened = await _geolocatorWrapper.openAppSettings();
-      AppLogger.info({
-        'event': 'location_open_app_settings',
-        'opened': opened,
-      });
+      AppLogger.info({'event': 'location_open_app_settings', 'opened': opened});
       return opened;
     } catch (e) {
       AppLogger.error({
         'event': 'location_open_app_settings_error',
-        'error': e.toString(),
+        'error': e,
       });
       // Don't throw - return false gracefully
       return false;

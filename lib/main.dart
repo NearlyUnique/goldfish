@@ -20,10 +20,7 @@ void main() async {
   try {
     await FirebaseService.initialize();
   } on Exception catch (e) {
-    AppLogger.error({
-      'event': 'firebase_initialization_failed',
-      'error': e.toString(),
-    });
+    AppLogger.error({'event': 'firebase_initialization_failed', 'error': e});
     // Continue app startup even if Firebase initialization fails
     // The app will show errors when trying to use Firebase features
   }
@@ -49,9 +46,7 @@ class _MyAppState extends State<MyApp> {
     authService: AuthService(
       firebaseAuth: firebase_auth.FirebaseAuth.instance,
       googleSignIn: GoogleSignIn(signInOption: SignInOption.standard),
-      userRepository: UserRepository(
-        firestore: FirebaseFirestore.instance,
-      ),
+      userRepository: UserRepository(firestore: FirebaseFirestore.instance),
     ),
   );
   late final AppRouter _router = AppRouter(authNotifier: _authNotifier);

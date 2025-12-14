@@ -165,7 +165,7 @@ class RecordVisitViewModel extends ChangeNotifier {
     } on Exception catch (e) {
       AppLogger.error({
         'event': 'record_visit_refresh_location_error',
-        'error': e.toString(),
+        'error': e,
       });
       _setError('Failed to get location: ${e.toString()}');
       _setLoadingLocation(false);
@@ -181,7 +181,7 @@ class RecordVisitViewModel extends ChangeNotifier {
     } catch (e) {
       AppLogger.error({
         'event': 'record_visit_open_app_settings_error',
-        'error': e.toString(),
+        'error': e,
       });
     }
   }
@@ -205,7 +205,7 @@ class RecordVisitViewModel extends ChangeNotifier {
     } on http.ClientException catch (e) {
       AppLogger.error({
         'event': 'record_visit_fetch_suggestions_network_error',
-        'error': e.toString(),
+        'error': e,
         'latitude': latitude,
         'longitude': longitude,
       });
@@ -214,7 +214,7 @@ class RecordVisitViewModel extends ChangeNotifier {
     } on OverpassException catch (e) {
       AppLogger.error({
         'event': 'record_visit_fetch_suggestions_overpass_error',
-        'error': e.toString(),
+        'error': e,
         'latitude': latitude,
         'longitude': longitude,
       });
@@ -223,7 +223,7 @@ class RecordVisitViewModel extends ChangeNotifier {
     } on Exception catch (e) {
       AppLogger.error({
         'event': 'record_visit_fetch_suggestions_error',
-        'error': e.toString(),
+        'error': e,
         'latitude': latitude,
         'longitude': longitude,
       });
@@ -290,7 +290,7 @@ class RecordVisitViewModel extends ChangeNotifier {
     } on VisitDataException catch (e) {
       AppLogger.error({
         'event': 'record_visit_save_error',
-        'error': e.toString(),
+        'error': e,
         'user_id': user.uid,
       });
       _setError('Failed to save visit: ${e.displayMessage}');
@@ -299,7 +299,7 @@ class RecordVisitViewModel extends ChangeNotifier {
     } on Exception catch (e) {
       AppLogger.error({
         'event': 'record_visit_save_error',
-        'error': e.toString(),
+        'error': e,
         'user_id': user.uid,
       });
       _setError('Failed to save visit: ${e.toString()}');

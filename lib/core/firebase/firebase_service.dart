@@ -19,14 +19,11 @@ class FirebaseService {
       AppLogger.error({
         'event': 'firebase_initialization',
         'code': e.code,
-        'message': e.message,
+        'error': e,
       });
       rethrow;
     } catch (e) {
-      AppLogger.error({
-        'event': 'firebase_initialization',
-        'error': e.toString(),
-      });
+      AppLogger.error({'event': 'firebase_initialization', 'error': e});
       rethrow;
     }
   }

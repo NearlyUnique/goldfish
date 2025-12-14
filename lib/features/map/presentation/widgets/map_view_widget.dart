@@ -90,10 +90,7 @@ class _MapViewWidgetState extends State<MapViewWidget> {
 
   /// Handles location updates and re-centres the map if the user has moved
   /// more than 10 meters, preserving the current zoom and rotation.
-  void _handleLocationUpdate(
-    GeoLatLong? oldLocation,
-    GeoLatLong? newLocation,
-  ) {
+  void _handleLocationUpdate(GeoLatLong? oldLocation, GeoLatLong? newLocation) {
     // Only process if we have a new location
     if (newLocation == null) {
       _previousLocation = null;
@@ -162,34 +159,30 @@ class _MapViewWidgetState extends State<MapViewWidget> {
             children: [
               TileLayer(
                 urlTemplate: MapViewWidget._tileUrl,
-                tileProvider: widget.tileProvider ??
+                tileProvider:
+                    widget.tileProvider ??
                     NetworkTileProvider(headers: _tileHeaders),
                 errorTileCallback: (tile, error, stackTrace) {
                   AppLogger.error({
                     'event': 'map_tile_load_error',
                     'tile_coordinates':
                         'z:${tile.coordinates.z}, x:${tile.coordinates.x}, y:${tile.coordinates.y}',
-                    'error': error.toString(),
+                    'error': error,
                   });
                 },
               ),
-              if (markerWidgets.isNotEmpty)
-                MarkerLayer(markers: markerWidgets),
+              if (markerWidgets.isNotEmpty) MarkerLayer(markers: markerWidgets),
             ],
           ),
         ),
         const OsmAttribution(),
         if (widget.errorMessage != null)
-          _InlineError(
-            message: widget.errorMessage!,
-            onRetry: widget.onRetry,
-          ),
+          _InlineError(message: widget.errorMessage!, onRetry: widget.onRetry),
       ],
     );
   }
 
-  Map<String, String> get _tileHeaders =>
-      {'User-Agent': widget.tileUserAgent};
+  Map<String, String> get _tileHeaders => {'User-Agent': widget.tileUserAgent};
 
   Marker _buildVisitMarker(MapMarker marker) {
     return Marker(
