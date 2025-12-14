@@ -127,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _error = e is VisitDataException
-              ? e.message
+              ? e.displayMessage
               : 'Failed to load visits. Please try again.';
           _isLoading = false;
         });
@@ -259,33 +259,32 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Start periodic timer for 30-second fallback updates
       if (mounted) {
-        _locationUpdateTimer = Timer.periodic(
-          const Duration(seconds: 30),
-          (_) async {
-            if (!mounted || _viewMode != ViewMode.map) {
-              return;
-            }
+        _locationUpdateTimer = Timer.periodic(const Duration(seconds: 30), (
+          _,
+        ) async {
+          if (!mounted || _viewMode != ViewMode.map) {
+            return;
+          }
 
-            try {
-              final position = await _locationService.getCurrentLocation();
-              if (mounted && position != null) {
-                setState(() {
-                  _currentLocation = GeoLatLong(
-                    lat: position.latitude,
-                    long: position.longitude,
-                  );
-                  _locationError = null;
-                });
-              }
-            } catch (e) {
-              AppLogger.error({
-                'event': 'home_location_timer_update_error',
-                'error': e.toString(),
+          try {
+            final position = await _locationService.getCurrentLocation();
+            if (mounted && position != null) {
+              setState(() {
+                _currentLocation = GeoLatLong(
+                  lat: position.latitude,
+                  long: position.longitude,
+                );
+                _locationError = null;
               });
-              // Don't update error state on timer failures - stream might still work
             }
-          },
-        );
+          } catch (e) {
+            AppLogger.error({
+              'event': 'home_location_timer_update_error',
+              'error': e.toString(),
+            });
+            // Don't update error state on timer failures - stream might still work
+          }
+        });
       }
     } catch (e) {
       AppLogger.error({
@@ -470,7 +469,10 @@ class _HomeScreenState extends State<HomeScreen> {
   ///
   /// On Android, tries Google Maps URL first (most reliable), then falls back to geo: URI.
   /// On iOS, uses geo: URI which opens Apple Maps or user's preferred map app.
-  Future<void> _openLocationInMaps(GeoLatLong location, String placeName) async {
+  Future<void> _openLocationInMaps(
+    GeoLatLong location,
+    String placeName,
+  ) async {
     try {
       // Try Google Maps URL first (works reliably on Android and opens in app if installed)
       final googleMapsUri = Uri.parse(
@@ -494,9 +496,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // If both fail, show error message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to open maps application'),
-          ),
+          const SnackBar(content: Text('Unable to open maps application')),
         );
       }
     } catch (e) {
@@ -507,9 +507,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to open maps application'),
-          ),
+          const SnackBar(content: Text('Unable to open maps application')),
         );
       }
     }

@@ -2,24 +2,22 @@ import 'dart:convert';
 
 import 'package:goldfish/core/api/http_client.dart';
 import 'package:goldfish/core/data/models/place_suggestion_model.dart';
+import 'package:goldfish/core/exceptions/goldfish_exception.dart';
 import 'package:http/http.dart' as http;
 
 /// Exception thrown when Overpass API returns an error.
-class OverpassException implements Exception {
+class OverpassException extends GoldfishException {
   /// Creates a new [OverpassException] with the given [eventName] and optional
   /// context fields for logging.
   const OverpassException(
-    this.eventName, {
+    String eventName, {
     this.statusCode,
     this.responseBody,
     this.remark,
     this.latitude,
     this.longitude,
-    this.innerError,
-  });
-
-  /// The event name for logging purposes (e.g., 'overpass_api_error').
-  final String eventName;
+    Object? innerError,
+  }) : super(eventName, innerError);
 
   /// The HTTP status code, if available.
   final int? statusCode;
@@ -36,14 +34,17 @@ class OverpassException implements Exception {
   /// The longitude used in the query, if available.
   final double? longitude;
 
-  /// The underlying error, if available (e.g., FormatException).
-  final Object? innerError;
-
-  /// Gets the error message in the format 'overpass: eventName'.
-  String get displayMessage => 'overpass: $eventName';
-
+  /// Gets the display message for the exception including diagnostic fields
   @override
-  String toString() => displayMessage;
+  String toString() {
+    final parts = <String>['overpass: ${super.toString()}'];
+    if (statusCode != null) parts.add('statusCode=$statusCode');
+    if (remark != null) parts.add('remark=$remark');
+    if (latitude != null && longitude != null) {
+      parts.add('lat=$latitude, lon=$longitude');
+    }
+    return parts.join(', ');
+  }
 }
 
 /// Client for querying the Overpass API to find nearby places.

@@ -1,20 +1,19 @@
+import 'package:goldfish/core/exceptions/goldfish_exception.dart';
+
 /// Exception thrown when visit data operations fail.
-class VisitDataException implements Exception {
+class VisitDataException extends GoldfishException {
   /// Creates a new [VisitDataException] with the given [provider], [eventName],
   /// and optional [visitId], [userId], and [innerError] for diagnostics.
   const VisitDataException(
     this.provider,
-    this.eventName, {
+    String eventName, {
     this.visitId,
     this.userId,
-    this.innerError,
-  });
+    Object? innerError,
+  }) : super(eventName, innerError);
 
   /// The provider name (e.g., 'firestore').
   final String provider;
-
-  /// The event name for logging purposes (e.g., 'visit_create_error').
-  final String eventName;
 
   /// The visit ID, if available, for diagnostic purposes.
   final String? visitId;
@@ -22,12 +21,8 @@ class VisitDataException implements Exception {
   /// The user ID, if available, for diagnostic purposes.
   final String? userId;
 
-  /// The underlying error that caused this exception, if available.
-  final Object? innerError;
-
-  /// Gets the error message in the format 'provider: eventName'.
-  String get displayMessage => '$provider: $eventName';
-
+  /// Gets the display message for the exception including [visitId] and [userId]
   @override
-  String toString() => displayMessage;
+  String toString() =>
+      '${super.toString()}, provider=$provider, visitId=$visitId, userId=$userId';
 }

@@ -258,16 +258,16 @@ void main() {
 
     testWidgets('displays error state when loading fails', (tester) async {
       // Arrange
-      when(
-        () => mockVisitRepository.getUserVisits(any()),
-      ).thenThrow(const VisitDataException('Failed to load visits'));
+      when(() => mockVisitRepository.getUserVisits(any())).thenThrow(
+        const VisitDataException('firestore', 'Failed to load visits'),
+      );
 
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
       // Assert
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
-      expect(find.text('Failed to load visits'), findsOneWidget);
+      expect(find.textContaining('Failed to load visits'), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
     });
 
@@ -279,7 +279,7 @@ void main() {
       when(() => mockVisitRepository.getUserVisits(any())).thenAnswer((_) {
         callCount++;
         if (callCount == 1) {
-          throw const VisitDataException('Failed to load visits');
+          throw const VisitDataException('firestore', 'Failed to load visits');
         }
         return Future.value(<Visit>[]);
       });
@@ -288,7 +288,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert - error state shown
-      expect(find.text('Failed to load visits'), findsOneWidget);
+      expect(find.textContaining('Failed to load visits'), findsOneWidget);
       expect(callCount, equals(1));
 
       // Act - tap retry button
