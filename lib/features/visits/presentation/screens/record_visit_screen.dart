@@ -1,12 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:goldfish/core/api/http_client.dart';
-import 'package:goldfish/core/api/overpass_client.dart';
-import 'package:goldfish/core/auth/auth_notifier.dart';
 import 'package:goldfish/core/data/models/place_suggestion_model.dart';
-import 'package:goldfish/core/data/repositories/visit_repository.dart';
-import 'package:goldfish/core/location/location_service.dart';
 import 'package:goldfish/features/visits/domain/view_models/record_visit_view_model.dart';
 import 'package:goldfish/features/visits/presentation/widgets/place_suggestions_list.dart';
 
@@ -16,64 +10,41 @@ import 'package:goldfish/features/visits/presentation/widgets/place_suggestions_
 /// - Capture GPS location automatically
 /// - View place suggestions from Overpass API
 /// - Select a place from suggestions or enter manually
-/// - Save the visit to Firestore
+/// - Save the visit via the repository
 class RecordVisitScreen extends StatefulWidget {
   /// Creates a new [RecordVisitScreen].
-  const RecordVisitScreen({
-    super.key,
-    required this.authNotifier,
-  });
+  const RecordVisitScreen({super.key, required this.viewModel});
 
-  /// The authentication notifier for getting the current user.
-  final AuthNotifier authNotifier;
+  /// The view model managing the screen's business logic and state.
+  final RecordVisitViewModel viewModel;
 
   @override
   State<RecordVisitScreen> createState() => _RecordVisitScreenState();
 }
 
 class _RecordVisitScreenState extends State<RecordVisitScreen> {
-  late final RecordVisitViewModel _viewModel;
   final _placeNameController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
-    _viewModel = _createViewModel();
-    _viewModel.addListener(_onViewModelChanged);
-    _viewModel.initialize();
+    widget.viewModel.addListener(_onViewModelChanged);
+    widget.viewModel.initialize();
   }
 
   @override
   void dispose() {
-    _viewModel.removeListener(_onViewModelChanged);
-    _viewModel.dispose();
+    widget.viewModel.removeListener(_onViewModelChanged);
     _placeNameController.dispose();
     super.dispose();
-  }
-
-  /// Creates a [RecordVisitViewModel] with all required dependencies.
-  RecordVisitViewModel _createViewModel() {
-    final locationService = GeolocatorLocationService();
-    final httpClient = HttpPackageClient();
-    final overpassClient = OverpassClient(httpClient: httpClient);
-    final visitRepository = VisitRepository(
-      firestore: FirebaseFirestore.instance,
-    );
-
-    return RecordVisitViewModel(
-      locationService: locationService,
-      overpassClient: overpassClient,
-      visitRepository: visitRepository,
-      authNotifier: widget.authNotifier,
-    );
   }
 
   /// Handles ViewModel state changes, updating the UI accordingly.
   void _onViewModelChanged() {
     // Update text field if place name changed (e.g., from suggestion selection)
-    if (_placeNameController.text != _viewModel.placeName) {
-      _placeNameController.text = _viewModel.placeName;
+    if (_placeNameController.text != widget.viewModel.placeName) {
+      _placeNameController.text = widget.viewModel.placeName;
     }
   }
 
@@ -83,17 +54,19 @@ class _RecordVisitScreenState extends State<RecordVisitScreen> {
       return;
     }
 
-    if (!_viewModel.canSave) {
+    if (!widget.viewModel.canSave) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter a place name and ensure location is available.'),
+          content: Text(
+            'Please enter a place name and ensure location is available.',
+          ),
         ),
       );
       return;
     }
 
     try {
-      await _viewModel.saveVisit();
+      await widget.viewModel.saveVisit();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -118,7 +91,7 @@ class _RecordVisitScreenState extends State<RecordVisitScreen> {
 
   /// Handles the cancel button tap.
   void _handleCancel() {
-    _viewModel.cancel();
+    widget.viewModel.cancel();
     context.pop();
   }
 
@@ -134,7 +107,7 @@ class _RecordVisitScreenState extends State<RecordVisitScreen> {
         ),
       ),
       body: ListenableBuilder(
-        listenable: _viewModel,
+        listenable: widget.viewModel,
         builder: (context, _) {
           return Stack(
             children: [
@@ -146,23 +119,28 @@ class _RecordVisitScreenState extends State<RecordVisitScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // Location status section
-                      _LocationStatusSection(viewModel: _viewModel),
+                      _LocationStatusSection(viewModel: widget.viewModel),
                       const SizedBox(height: 24),
 
                       // Place suggestions list (if location available)
-                      if (_viewModel.currentLocation != null) ...[
-                        PlaceSuggestionsList(viewModel: _viewModel),
+                      if (widget.viewModel.currentLocation != null) ...[
+                        PlaceSuggestionsList(viewModel: widget.viewModel),
                         const SizedBox(height: 24),
                         // Divider with "OR" text
                         Row(
                           children: [
                             const Expanded(child: Divider()),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               child: Text(
                                 'OR',
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
                                     ),
                               ),
                             ),
@@ -174,15 +152,15 @@ class _RecordVisitScreenState extends State<RecordVisitScreen> {
 
                       // Manual entry section
                       _ManualEntrySection(
-                        viewModel: _viewModel,
+                        viewModel: widget.viewModel,
                         controller: _placeNameController,
                       ),
                       const SizedBox(height: 24),
 
                       // Selected suggestion details (if any)
-                      if (_viewModel.selectedSuggestion != null) ...[
+                      if (widget.viewModel.selectedSuggestion != null) ...[
                         _SelectedSuggestionDetails(
-                          suggestion: _viewModel.selectedSuggestion!,
+                          suggestion: widget.viewModel.selectedSuggestion!,
                         ),
                         const SizedBox(height: 24),
                       ],
@@ -192,19 +170,17 @@ class _RecordVisitScreenState extends State<RecordVisitScreen> {
               ),
 
               // Loading overlay during save
-              if (_viewModel.isSaving)
+              if (widget.viewModel.isSaving)
                 Container(
                   color: Colors.black.withValues(alpha: 0.3),
-                  child: const Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  child: const Center(child: CircularProgressIndicator()),
                 ),
             ],
           );
         },
       ),
       bottomNavigationBar: ListenableBuilder(
-        listenable: _viewModel,
+        listenable: widget.viewModel,
         builder: (context, _) {
           return SafeArea(
             child: Padding(
@@ -221,7 +197,8 @@ class _RecordVisitScreenState extends State<RecordVisitScreen> {
                   Expanded(
                     flex: 2,
                     child: FilledButton(
-                      onPressed: _viewModel.canSave && !_viewModel.isSaving
+                      onPressed:
+                          widget.viewModel.canSave && !widget.viewModel.isSaving
                           ? _handleSave
                           : null,
                       child: const Text('Save'),
@@ -294,8 +271,8 @@ class _LocationStatusSection extends StatelessWidget {
               Text(
                 '${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -330,8 +307,11 @@ class _LocationStatusSection extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           viewModel.error!,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                         ),
                       ],
@@ -385,10 +365,7 @@ class _ManualEntrySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Place Name',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text('Place Name', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
@@ -437,8 +414,8 @@ class _SelectedSuggestionDetails extends StatelessWidget {
                 Text(
                   'Selected Place',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
                 ),
               ],
             ),
@@ -447,8 +424,8 @@ class _SelectedSuggestionDetails extends StatelessWidget {
               Text(
                 'Type: ${suggestion.amenityType}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
               ),
             ],
             if (suggestion.address != null) ...[
@@ -456,8 +433,8 @@ class _SelectedSuggestionDetails extends StatelessWidget {
               Text(
                 'Address: ${suggestion.address}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
               ),
             ],
           ],
@@ -466,4 +443,3 @@ class _SelectedSuggestionDetails extends StatelessWidget {
     );
   }
 }
-

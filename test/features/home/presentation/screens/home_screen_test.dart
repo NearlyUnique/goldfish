@@ -406,6 +406,7 @@ void main() {
                 builder: (context, state) => HomeScreen(
                   authNotifier: unauthenticatedNotifier,
                   visitRepository: mockVisitRepository,
+                  locationService: fakeLocationService,
                   tileProvider: _StubTileProvider(),
                 ),
               ),
@@ -508,6 +509,7 @@ void main() {
               builder: (context, state) => HomeScreen(
                 authNotifier: fakeAuthNotifier,
                 visitRepository: mockVisitRepository,
+                locationService: fakeLocationService,
                 tileProvider: _StubTileProvider(),
               ),
             ),
@@ -581,6 +583,7 @@ void main() {
               builder: (context, state) => HomeScreen(
                 authNotifier: fakeAuthNotifier,
                 visitRepository: mockVisitRepository,
+                locationService: fakeLocationService,
                 tileProvider: _StubTileProvider(),
               ),
             ),

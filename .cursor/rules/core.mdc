@@ -6,3 +6,11 @@ alwaysApply: true
 3. All code must have tests, a task can only be stated to be complete if all tests have been run without error
 4. Any linting errors must be dealt with within the task
 5. low level packages, for example repository should not log errors, they should throw exceptions with sufficient detail that outer layers may choose to log the error. Do not throw and log, one or the other.
+6. Do NOT change code unrelated to the current task.
+
+# Dependencies
+
+1. lifetime entities or factory functions should be created from main, wrapped in appropriate functions
+2. inject these dependencies into components as required, e.g. repositories
+3. View Models should have dependencies injected into them
+4. Views have models injected into them

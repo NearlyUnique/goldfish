@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -33,25 +32,19 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.authNotifier,
-    VisitRepository? visitRepository,
-    LocationService? locationService,
+    required this.visitRepository,
+    required this.locationService,
     TileProvider? tileProvider,
-  }) : _visitRepository = visitRepository,
-       _locationService = locationService,
-       _tileProvider = tileProvider;
+  }) : _tileProvider = tileProvider;
 
   /// The authentication notifier for managing auth state.
   final AuthNotifier authNotifier;
 
   /// The visit repository for fetching visits.
-  ///
-  /// If not provided, creates a default [VisitRepository] instance.
-  final VisitRepository? _visitRepository;
+  final VisitRepository visitRepository;
 
   /// The location service for getting current location.
-  ///
-  /// If not provided, creates a default [GeolocatorLocationService] instance.
-  final LocationService? _locationService;
+  final LocationService locationService;
 
   /// The tile provider for the map view.
   ///
@@ -64,8 +57,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late final VisitRepository _visitRepository;
-  late final LocationService _locationService;
   List<Visit> _visits = [];
   bool _isLoading = false;
   String? _error;
@@ -79,10 +70,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _visitRepository =
-        widget._visitRepository ??
-        VisitRepository(firestore: FirebaseFirestore.instance);
-    _locationService = widget._locationService ?? GeolocatorLocationService();
     // Defer loading until after the first frame to avoid blocking main thread
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadVisits();
@@ -111,7 +98,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final visits = await _visitRepository.getUserVisits(user.uid);
+      final visits = await widget.visitRepository.getUserVisits(user.uid);
       if (mounted) {
         setState(() {
           _visits = visits;
@@ -154,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _handleOpenSettings() async {
-    await _locationService.openAppSettings();
+    await widget.locationService.openAppSettings();
   }
 
   /// Starts continuous location tracking for the map view.
@@ -176,7 +163,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       // Check if location services are enabled first
-      final serviceEnabled = await _locationService.isLocationServiceEnabled();
+      final serviceEnabled = await widget.locationService
+          .isLocationServiceEnabled();
       if (!serviceEnabled) {
         if (mounted) {
           setState(() {
@@ -189,12 +177,12 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       // Check if we already have permission
-      final hasPermission = await _locationService.hasPermission();
+      final hasPermission = await widget.locationService.hasPermission();
       if (!hasPermission) {
         // Request permission
-        final granted = await _locationService.requestPermission();
+        final granted = await widget.locationService.requestPermission();
         if (!granted) {
-          final deniedForever = await _locationService
+          final deniedForever = await widget.locationService
               .isPermissionDeniedForever();
           if (mounted) {
             setState(() {
@@ -209,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       // Get initial location
-      final initialPosition = await _locationService.getCurrentLocation();
+      final initialPosition = await widget.locationService.getCurrentLocation();
       if (mounted && initialPosition != null) {
         setState(() {
           _currentLocation = GeoLatLong(
@@ -228,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       // Start listening to location stream (updates on 10m movement)
-      final stream = _locationService.getPositionStream();
+      final stream = widget.locationService.getPositionStream();
       if (stream != null && mounted) {
         _locationStreamSubscription = stream.listen(
           (position) {
@@ -267,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           try {
-            final position = await _locationService.getCurrentLocation();
+            final position = await widget.locationService.getCurrentLocation();
             if (mounted && position != null) {
               setState(() {
                 _currentLocation = GeoLatLong(
