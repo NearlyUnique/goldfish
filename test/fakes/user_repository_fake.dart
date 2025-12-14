@@ -12,10 +12,11 @@ class FakeUserRepository implements UserRepository {
   /// Optionally accepts function handlers for each method. If not provided,
   /// uses default implementations that return safe defaults.
   FakeUserRepository({
-    Future<void> Function(UserModel user)? onCreateUser,
-    Future<void> Function(UserModel user)? onUpdateUser,
-    Future<UserModel?> Function(String uid)? onGetUser,
-    Future<void> Function(UserModel user)? onCreateOrUpdateUser,
+    Future<CreateUserResult> Function(UserModel user)? onCreateUser,
+    Future<UpdateUserResult> Function(UserModel user)? onUpdateUser,
+    Future<GetUserResult> Function(String uid)? onGetUser,
+    Future<CreateUserResult | UpdateUserResult> Function(UserModel user)?
+        onCreateOrUpdateUser,
   })  : onCreateUser = onCreateUser ?? _defaultCreateUser,
         onUpdateUser = onUpdateUser ?? _defaultUpdateUser,
         onGetUser = onGetUser ?? _defaultGetUser,
@@ -23,43 +24,51 @@ class FakeUserRepository implements UserRepository {
             onCreateOrUpdateUser ?? _defaultCreateOrUpdateUser;
 
   /// Handler for [createUser].
-  Future<void> Function(UserModel user) onCreateUser;
+  Future<UserResult> Function(UserModel user) onCreateUser;
 
   /// Handler for [updateUser].
-  Future<void> Function(UserModel user) onUpdateUser;
+  Future<UserResult> Function(UserModel user) onUpdateUser;
 
   /// Handler for [getUser].
-  Future<UserModel?> Function(String uid) onGetUser;
+  Future<UserResult> Function(String uid) onGetUser;
 
   /// Handler for [createOrUpdateUser].
-  Future<void> Function(UserModel user) onCreateOrUpdateUser;
+  Future<UserResult> Function(UserModel user) onCreateOrUpdateUser;
 
   @override
-  Future<void> createUser(UserModel user) => onCreateUser(user);
+  Future<UserResult> createUser(UserModel user) => onCreateUser(user);
 
   @override
-  Future<void> updateUser(UserModel user) => onUpdateUser(user);
+  Future<UserResult> updateUser(UserModel user) => onUpdateUser(user);
 
   @override
-  Future<UserModel?> getUser(String uid) => onGetUser(uid);
+  Future<UserResult> getUser(String uid) => onGetUser(uid);
 
   @override
-  Future<void> createOrUpdateUser(UserModel user) =>
+  Future<UserResult> createOrUpdateUser(UserModel user) =>
       onCreateOrUpdateUser(user);
 
   // Default implementations
-  static Future<void> _defaultCreateUser(UserModel user) async {
-    // No-op by default
+  static Future<UserResult> _defaultCreateUser(UserModel user) async {
+    return UserResult(eventName: 'user_create', uid: user.uid);
   }
 
-  static Future<void> _defaultUpdateUser(UserModel user) async {
-    // No-op by default
+  static Future<UserResult> _defaultUpdateUser(UserModel user) async {
+    return UserResult(eventName: 'user_update', uid: user.uid);
   }
 
-  static Future<UserModel?> _defaultGetUser(String uid) async => null;
+  static Future<UserResult> _defaultGetUser(String uid) async {
+    return UserResult(
+      eventName: 'user_get_not_found',
+      uid: uid,
+      user: null,
+    );
+  }
 
-  static Future<void> _defaultCreateOrUpdateUser(UserModel user) async {
-    // No-op by default
+  static Future<UserResult> _defaultCreateOrUpdateUser(
+    UserModel user,
+  ) async {
+    return UserResult(eventName: 'user_create', uid: user.uid);
   }
 }
 

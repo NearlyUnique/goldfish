@@ -1,7 +1,30 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:goldfish/core/auth/auth_exceptions.dart';
 import 'package:goldfish/core/auth/models/user_model.dart';
-import 'package:goldfish/core/logging/app_logger.dart';
+
+/// Result of a user repository operation.
+///
+/// Contains the event name for logging purposes, the user ID, and optionally
+/// the user model (for retrieval operations).
+class UserResult {
+  /// Creates a new [UserResult].
+  const UserResult({required this.eventName, required this.uid, this.user});
+
+  /// The event name for logging (e.g., 'user_create', 'user_update', 'user_get').
+  final String eventName;
+
+  /// The user ID involved in the operation.
+  final String uid;
+
+  /// The user model, if available (typically only for retrieval operations).
+  final UserModel? user;
+
+  /// Whether the operation succeeded.
+  ///
+  /// For retrieval operations, this is `true` if the user was found.
+  /// For create/update operations, this is always `true` (they throw on failure).
+  bool get succeeded => user != null || eventName != 'user_get_not_found';
+}
 
 /// Repository for managing user data in Firestore.
 ///
@@ -24,51 +47,54 @@ class UserRepository {
 
   /// Creates a new user document in Firestore.
   ///
+  /// Returns [UserResult] on success.
   /// Throws [UserDataException] if the operation fails.
-  Future<void> createUser(UserModel user) async {
+  Future<UserResult> createUser(UserModel user) async {
     try {
       await _firestore
           .collection(_usersCollection)
           .doc(user.uid)
           .set(user.toMap());
 
-      AppLogger.info({'event': 'user_create', 'uid': user.uid});
+      return UserResult(eventName: 'user_create', uid: user.uid);
     } catch (e) {
-      AppLogger.error({
-        'event': 'user_create',
-        'uid': user.uid,
-        'error': e.toString(),
-      });
-      throw const UserDataException('firestore', 'user_create_error');
+      throw UserDataException(
+        'firestore',
+        'user_create_error',
+        uid: user.uid,
+        innerError: e,
+      );
     }
   }
 
   /// Updates an existing user document in Firestore.
   ///
+  /// Returns [UserResult] on success.
   /// Throws [UserDataException] if the operation fails.
-  Future<void> updateUser(UserModel user) async {
+  Future<UserResult> updateUser(UserModel user) async {
     try {
       await _firestore
           .collection(_usersCollection)
           .doc(user.uid)
           .update(user.toMap());
 
-      AppLogger.info({'event': 'user_update', 'uid': user.uid});
+      return UserResult(eventName: 'user_update', uid: user.uid);
     } catch (e) {
-      AppLogger.error({
-        'event': 'user_update',
-        'uid': user.uid,
-        'error': e.toString(),
-      });
-      throw const UserDataException('firestore', 'user_update_error');
+      throw UserDataException(
+        'firestore',
+        'user_update_error',
+        uid: user.uid,
+        innerError: e,
+      );
     }
   }
 
   /// Gets a user document from Firestore by UID.
   ///
-  /// Returns `null` if the user doesn't exist.
+  /// Returns [UserResult] with [UserResult.user] set if
+  /// the user exists, or `null` if not found.
   /// Throws [UserDataException] if the operation fails.
-  Future<UserModel?> getUser(String uid) async {
+  Future<UserResult> getUser(String uid) async {
     try {
       final doc = await (_firestore as dynamic)
           .collection(_usersCollection)
@@ -76,8 +102,7 @@ class UserRepository {
           .get();
 
       if (!doc.exists) {
-        AppLogger.info({'event': 'user_get_not_found', 'uid': uid});
-        return null;
+        return UserResult(eventName: 'user_get_not_found', uid: uid);
       }
 
       // Use map-based factory to support both real Firestore snapshots and
@@ -86,31 +111,40 @@ class UserRepository {
         (doc.data() as Map<String, dynamic>),
         doc.id as String,
       );
-      AppLogger.info({'event': 'user_get', 'uid': uid});
-      return user;
+      return UserResult(eventName: 'user_get', uid: uid, user: user);
     } catch (e) {
-      AppLogger.error({'event': 'user_get', 'uid': uid, 'error': e.toString()});
-      throw const UserDataException('firestore', 'user_get_error');
+      throw UserDataException(
+        'firestore',
+        'user_get_error',
+        uid: uid,
+        innerError: e,
+      );
     }
   }
 
   /// Creates or updates a user document in Firestore.
   ///
   /// If the user exists, updates it. Otherwise, creates a new one.
+  /// Returns [UserResult] with the appropriate event name.
   /// Throws [UserDataException] if the operation fails.
-  Future<void> createOrUpdateUser(UserModel user) async {
+  Future<UserResult> createOrUpdateUser(UserModel user) async {
     try {
-      final existingUser = await getUser(user.uid);
-      if (existingUser == null) {
-        await createUser(user);
+      final existingUserResult = await getUser(user.uid);
+      if (!existingUserResult.succeeded) {
+        return await createUser(user);
       } else {
-        await updateUser(user);
+        return await updateUser(user);
       }
     } catch (e) {
       if (e is UserDataException) {
         rethrow;
       }
-      throw const UserDataException('firestore', 'user_create_or_update_error');
+      throw UserDataException(
+        'firestore',
+        'user_create_or_update_error',
+        uid: user.uid,
+        innerError: e,
+      );
     }
   }
 }

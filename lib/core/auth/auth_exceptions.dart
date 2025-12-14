@@ -43,12 +43,13 @@ class SignInPermissionException extends AuthException {
 /// (e.g., from Firebase) without exposing implementation details.
 class AuthenticationException extends AuthException {
   /// Creates a new [AuthenticationException] with the given [provider], [eventName],
-  /// and optional [code] and [userId] for diagnostics.
+  /// and optional [code], [userId], and [innerError] for diagnostics.
   const AuthenticationException(
     super.provider,
     super.eventName, {
     this.code,
     this.userId,
+    this.innerError,
   });
 
   /// The error code, if available (e.g., 'auth/network-request-failed').
@@ -56,10 +57,25 @@ class AuthenticationException extends AuthException {
 
   /// The user ID, if available, for diagnostic purposes.
   final String? userId;
+
+  /// The underlying error that caused this exception, if available.
+  final Object? innerError;
 }
 
 /// Exception thrown when user data operations fail.
 class UserDataException extends AuthException {
-  /// Creates a new [UserDataException] with the given [provider] and [eventName].
-  const UserDataException(super.provider, super.eventName);
+  /// Creates a new [UserDataException] with the given [provider], [eventName],
+  /// and optional [uid] and [innerError] for diagnostics.
+  const UserDataException(
+    super.provider,
+    super.eventName, {
+    this.uid,
+    this.innerError,
+  });
+
+  /// The user ID, if available, for diagnostic purposes.
+  final String? uid;
+
+  /// The underlying error that caused this exception, if available.
+  final Object? innerError;
 }

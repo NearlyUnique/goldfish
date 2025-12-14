@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:goldfish/core/auth/auth_exceptions.dart';
 import 'package:goldfish/core/auth/models/user_model.dart';
 import 'package:goldfish/core/auth/repositories/user_repository.dart';
+import 'package:goldfish/core/logging/app_logger.dart';
 
 /// Service for handling authentication operations.
 ///
@@ -60,16 +61,27 @@ class AuthService {
     } on PlatformException catch (e) {
       throw _handlePlatformException(e);
     } on firebase_auth.FirebaseAuthException catch (e) {
-      throw AuthenticationException('firebase', 'auth_error', code: e.code);
-    } on UserDataException {
-      throw const AuthenticationException(
+      throw AuthenticationException(
+        'firebase',
+        'auth_error',
+        code: e.code,
+        innerError: e,
+      );
+    } on UserDataException catch (e) {
+      throw AuthenticationException(
         'firestore',
         'user_document_creation_failed',
+        userId: e.uid,
+        innerError: e,
       );
     } on AuthException {
       rethrow;
     } catch (e) {
-      throw const AuthenticationException('google', 'sign_in_unexpected_error');
+      throw AuthenticationException(
+        'google',
+        'sign_in_unexpected_error',
+        innerError: e,
+      );
     }
   }
 
@@ -145,7 +157,15 @@ class AuthService {
     final now = DateTime.now();
 
     // Check if user already exists
-    final existingUser = await _userRepository.getUser(firebaseUser.uid);
+    final existingUserResult = await _userRepository.getUser(firebaseUser.uid);
+
+    // Log the getUser result
+    AppLogger.info({
+      'event': existingUserResult.eventName,
+      'uid': existingUserResult.uid,
+    });
+
+    final existingUser = existingUserResult.user;
 
     final userModel = UserModel(
       uid: firebaseUser.uid,
@@ -156,6 +176,9 @@ class AuthService {
       updatedAt: now,
     );
 
-    await _userRepository.createOrUpdateUser(userModel);
+    final result = await _userRepository.createOrUpdateUser(userModel);
+
+    // Log the createOrUpdateUser result
+    AppLogger.info({'event': result.eventName, 'uid': result.uid});
   }
 }

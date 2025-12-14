@@ -75,12 +75,16 @@ void main() {
         when(() => mockUserCredential.user).thenReturn(mockUser);
         when(() => mockUser.uid).thenReturn('test_uid');
         when(() => mockUser.email).thenReturn('test@example.com');
-        when(
-          () => mockUserRepository.getUser(any()),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockUserRepository.createOrUpdateUser(any()),
-        ).thenAnswer((_) async => {});
+        when(() => mockUserRepository.getUser(any())).thenAnswer(
+          (_) async => UserResult(
+            eventName: 'user_get_not_found',
+            uid: 'test_uid',
+            user: null,
+          ),
+        );
+        when(() => mockUserRepository.createOrUpdateUser(any())).thenAnswer(
+          (_) async => UserResult(eventName: 'user_create', uid: 'test_uid'),
+        );
 
         // Act
         final result = await authService.signInWithGoogle();

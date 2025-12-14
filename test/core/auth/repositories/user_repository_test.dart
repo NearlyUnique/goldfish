@@ -25,7 +25,7 @@ void main() {
         );
 
         // Act
-        await userRepository.createUser(user);
+        final result = await userRepository.createUser(user);
 
         // Assert: document was written to the fake Firestore.
         final snapshot = await fakeFirestore
@@ -36,39 +36,54 @@ void main() {
         expect(snapshot.exists, isTrue);
         final data = snapshot.data();
         expect(data?['email'], equals('test@example.com'));
+        expect(result.eventName, equals('user_create'));
+        expect(result.uid, equals('test_uid'));
+        expect(result.succeeded, isTrue);
       });
     });
 
     group('getUser', () {
-      test('returns user when document exists', () async {
-        // Arrange
-        final now = DateTime.now();
-        final timestamp = Timestamp.fromDate(now);
+      test(
+        'returns UserRepositoryResult with user when document exists',
+        () async {
+          // Arrange
+          final now = DateTime.now();
+          final timestamp = Timestamp.fromDate(now);
 
-        await fakeFirestore.collection('users').doc('test_uid').set({
-          'email': 'test@example.com',
-          'display_name': 'Test User',
-          'photo_url': null,
-          'created_at': timestamp,
-          'updated_at': timestamp,
-        });
+          await fakeFirestore.collection('users').doc('test_uid').set({
+            'email': 'test@example.com',
+            'display_name': 'Test User',
+            'photo_url': null,
+            'created_at': timestamp,
+            'updated_at': timestamp,
+          });
 
-        // Act
-        final result = await userRepository.getUser('test_uid');
+          // Act
+          final result = await userRepository.getUser('test_uid');
 
-        // Assert
-        expect(result, isNotNull);
-        expect(result?.uid, equals('test_uid'));
-        expect(result?.email, equals('test@example.com'));
-      });
+          // Assert
+          expect(result.eventName, equals('user_get'));
+          expect(result.uid, equals('test_uid'));
+          expect(result.succeeded, isTrue);
+          expect(result.user, isNotNull);
+          expect(result.user?.uid, equals('test_uid'));
+          expect(result.user?.email, equals('test@example.com'));
+        },
+      );
 
-      test('returns null when document does not exist', () async {
-        // Act
-        final result = await userRepository.getUser('test_uid');
+      test(
+        'returns UserRepositoryResult with null user when document does not exist',
+        () async {
+          // Act
+          final result = await userRepository.getUser('test_uid');
 
-        // Assert
-        expect(result, isNull);
-      });
+          // Assert
+          expect(result.eventName, equals('user_get_not_found'));
+          expect(result.uid, equals('test_uid'));
+          expect(result.succeeded, isFalse);
+          expect(result.user, isNull);
+        },
+      );
     });
   });
 }
