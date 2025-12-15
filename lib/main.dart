@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:goldfish/core/api/http_client.dart';
@@ -17,6 +20,9 @@ import 'package:goldfish/core/theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Set up global error handlers to catch and log all errors
+  _setupErrorHandlers();
+
   AppLogger.logAppInitialization();
 
   // Initialize Firebase
@@ -28,7 +34,96 @@ void main() async {
     // The app will show errors when trying to use Firebase features
   }
 
-  runApp(const MyApp());
+  // Run app in a zone to catch async errors
+  runZonedGuarded(
+    () {
+      runApp(const MyApp());
+    },
+    (error, stackTrace) {
+      AppLogger.error({
+        'event': 'unhandled_async_error',
+        'error': error,
+        'stackTrace': stackTrace.toString(),
+      });
+      // In debug mode, also print to console for immediate visibility
+      if (kDebugMode) {
+        debugPrint('Unhandled async error: $error');
+        debugPrint('Stack trace: $stackTrace');
+      }
+    },
+  );
+}
+
+/// Sets up global error handlers for Flutter framework errors and platform errors.
+///
+/// This ensures all errors are caught and logged, even if they occur outside
+/// of try-catch blocks. This is critical for diagnosing crashes that appear
+/// to have no debug output.
+void _setupErrorHandlers() {
+  // Handle Flutter framework errors (e.g., widget build errors)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    AppLogger.error({
+      'event': 'flutter_error',
+      'exception': details.exception.toString(),
+      'library': details.library,
+      'stack': details.stack.toString(),
+      'context': details.context?.toString(),
+    });
+    // In debug mode, also use the default handler which shows red screen
+    if (kDebugMode) {
+      FlutterError.presentError(details);
+    }
+  };
+
+  // Handle platform errors (e.g., native code errors)
+  PlatformDispatcher.instance.onError = (error, stack) {
+    AppLogger.error({
+      'event': 'platform_error',
+      'error': error.toString(),
+      'stackTrace': stack.toString(),
+    });
+    // In debug mode, also print to console
+    if (kDebugMode) {
+      debugPrint('Platform error: $error');
+      debugPrint('Stack trace: $stack');
+    }
+    // Return true to indicate the error was handled
+    return true;
+  };
+
+  // Custom error widget builder to show errors in the UI
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    AppLogger.error({
+      'event': 'error_widget_built',
+      'exception': details.exception.toString(),
+      'library': details.library,
+    });
+    // In debug mode, show detailed error widget
+    if (kDebugMode) {
+      return ErrorWidget(details.exception);
+    }
+    // In release mode, show a user-friendly message
+    return Material(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.error_outline, size: 64, color: Colors.red),
+            SizedBox(height: 16),
+            Text(
+              'Something went wrong',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Please restart the app',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  };
 }
 
 /// Main application widget.
