@@ -1,3 +1,4 @@
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -10,8 +11,6 @@ import 'package:mocktail/mocktail.dart';
 class MockFirebaseAuth extends Mock implements firebase_auth.FirebaseAuth {}
 
 class MockGoogleSignIn extends Mock implements GoogleSignIn {}
-
-class MockUserRepository extends Mock implements UserRepository {}
 
 class MockGoogleSignInAccount extends Mock implements GoogleSignInAccount {}
 
@@ -39,17 +38,19 @@ void main() {
   group('AuthService', () {
     late MockFirebaseAuth mockFirebaseAuth;
     late MockGoogleSignIn mockGoogleSignIn;
-    late MockUserRepository mockUserRepository;
+    late FakeFirebaseFirestore fakeFirestore;
+    late UserRepository userRepository;
     late AuthService authService;
 
     setUp(() {
       mockFirebaseAuth = MockFirebaseAuth();
       mockGoogleSignIn = MockGoogleSignIn();
-      mockUserRepository = MockUserRepository();
+      fakeFirestore = FakeFirebaseFirestore();
+      userRepository = UserRepository(firestore: fakeFirestore);
       authService = AuthService(
         firebaseAuth: mockFirebaseAuth,
         googleSignIn: mockGoogleSignIn,
-        userRepository: mockUserRepository,
+        userRepository: userRepository,
       );
     });
 
@@ -75,16 +76,9 @@ void main() {
         when(() => mockUserCredential.user).thenReturn(mockUser);
         when(() => mockUser.uid).thenReturn('test_uid');
         when(() => mockUser.email).thenReturn('test@example.com');
-        when(() => mockUserRepository.getUser(any())).thenAnswer(
-          (_) async => UserResult(
-            eventName: 'user_get_not_found',
-            uid: 'test_uid',
-            user: null,
-          ),
-        );
-        when(() => mockUserRepository.createOrUpdateUser(any())).thenAnswer(
-          (_) async => UserResult(eventName: 'user_create', uid: 'test_uid'),
-        );
+        // Real UserRepository with FakeFirebaseFirestore will handle:
+        // - getUser('test_uid') returns not found (empty Firestore)
+        // - createOrUpdateUser creates the user in Firestore
 
         // Act
         final result = await authService.signInWithGoogle();
