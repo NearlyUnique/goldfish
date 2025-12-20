@@ -103,11 +103,11 @@ void _setupErrorHandlers() {
       return ErrorWidget(details.exception);
     }
     // In release mode, show a user-friendly message
-    return Material(
+    return const Material(
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(Icons.error_outline, size: 64, color: Colors.red),
             SizedBox(height: 16),
             Text(

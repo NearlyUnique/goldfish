@@ -3,26 +3,31 @@
 **Review Date:** 2024
 **Reviewer:** AI Code Review
 **Target Coverage:** 70% minimum
-**Current Coverage:** 77.3% (1181/1528 lines)
+**Current Coverage:** 76.2% (1154/1514 lines)
 
 ---
 
 ## Executive Summary
 
-The Goldfish codebase demonstrates a well-structured Flutter application following feature-based architecture with clear separation of concerns. The codebase shows good adherence to SOLID principles, particularly dependency inversion through abstract interfaces. Overall code coverage at 77.3% exceeds the 70% target, though several areas require attention.
+The Goldfish codebase demonstrates a well-structured Flutter application following feature-based architecture with clear separation of concerns. The codebase shows good adherence to SOLID principles, particularly dependency inversion through abstract interfaces. Overall code coverage at 76.2% exceeds the 70% target, though several areas require attention.
 
 ### Key Strengths
 - ✅ Feature-based architecture with clear separation of concerns
 - ✅ Strong use of dependency injection and abstract interfaces
 - ✅ Comprehensive error handling and logging
-- ✅ Good test coverage overall (77.3%)
+- ✅ Good test coverage overall (76.2%)
 - ✅ Consistent code style and documentation
 
 ### Areas for Improvement
 - ⚠️ Some tight coupling in dependency creation (main.dart, RecordVisitScreen)
-- ⚠️ Low coverage in critical areas (geolocator_wrapper: 7.7%, user_model: 36.4%)
+- ⚠️ Low coverage in critical areas (geolocator_wrapper: 7.7%, user_model: 34.1%, goldfish_exception: 14.3%)
 - ⚠️ Mixed abstraction levels in some view models
 - ⚠️ Some fragility in direct Firebase/package instantiation
+
+### Recent Improvements
+- ✅ `auth_notifier.dart` coverage significantly improved to 96.7% (from 78.9%)
+- ✅ `user_repository.dart` coverage improved to 58.3% (from 43.9%)
+- ✅ `visit_repository.dart` coverage improved to 83.3% (from 81.1%)
 
 ---
 
@@ -355,48 +360,48 @@ features/visits/
 
 ### 5.1 Overall Coverage
 
-**Current Coverage:** 77.3% (1181/1528 lines)
+**Current Coverage:** 76.2% (1154/1514 lines)
 **Target:** 70% minimum
 **Status:** ✅ **Exceeds Target**
 
 ### 5.2 File-by-File Coverage
 
 #### Excellent Coverage (≥85%)
-- ✅ `http_client.dart`: 100% (3/3)
-- ✅ `visit_marker.dart`: 100% (31/31)
-- ✅ `visit_exceptions.dart`: 100% (3/3)
-- ✅ `google_sign_in_button.dart`: 100% (13/13)
-- ✅ `map_view_widget.dart`: 93.0% (120/129)
-- ✅ `sign_in_screen.dart`: 92.0% (46/50)
+- ✅ `http_client.dart`: 100.0% (3/3)
+- ✅ `visit_marker.dart`: 100.0% (31/31)
+- ✅ `google_sign_in_button.dart`: 100.0% (13/13)
+- ✅ `auth_notifier.dart`: 96.7% (29/30)
+- ✅ `map_view_widget.dart`: 94.4% (117/124)
 - ✅ `place_suggestions_list.dart`: 87.3% (131/150)
 - ✅ `map_marker.dart`: 85.7% (24/28)
-- ✅ `overpass_client.dart`: 85.4% (35/41)
 
 **Assessment:** ✅ **Excellent** - Core functionality well tested.
 
 #### Good Coverage (70-84%)
-- ✅ `visit_repository.dart`: 81.1% (43/53)
-- ✅ `home_screen.dart`: 80.2% (235/293)
-- ✅ `auth_notifier.dart`: 78.9% (30/38)
 - ✅ `place_suggestion_model.dart`: 84.3% (70/83)
+- ✅ `visit_repository.dart`: 83.3% (40/48)
+- ✅ `sign_in_screen.dart`: 80.9% (55/68)
+- ✅ `overpass_client.dart`: 75.0% (27/36)
+- ✅ `home_screen.dart`: 75.0% (213/284)
 - ✅ `visit_model.dart`: 73.0% (119/163)
-- ✅ `auth_service.dart`: 72.3% (34/47)
-- ✅ `location_service.dart`: 71.0% (49/69)
-- ✅ `record_visit_view_model.dart`: 70.1% (110/157)
+- ✅ `record_visit_view_model.dart`: 72.8% (110/151)
+- ✅ `location_service.dart`: 71.7% (43/60)
+- ✅ `auth_service.dart`: 70.4% (38/54)
 
 **Assessment:** ✅ **Good** - Most business logic well covered.
 
 #### Needs Improvement (50-69%)
-- ⚠️ `app_theme.dart`: 62.1% (18/29)
+- ⚠️ `user_repository.dart`: 58.3% (21/36)
 - ⚠️ `app_logger.dart`: 55.6% (10/18)
-- ⚠️ `auth_exceptions.dart`: 54.5% (6/11)
+- ⚠️ `visit_exceptions.dart`: 50.0% (2/4)
 
 **Assessment:** ⚠️ **Acceptable** - Some utility code has lower coverage, but not critical.
 
 #### Critical Gaps (<50%)
 - ❌ `geolocator_wrapper.dart`: 7.7% (1/13) - **CRITICAL**
-- ❌ `user_model.dart`: 36.4% (16/44) - **HIGH PRIORITY**
-- ❌ `user_repository.dart`: 43.9% (18/41) - **HIGH PRIORITY**
+- ❌ `goldfish_exception.dart`: 14.3% (1/7) - **HIGH PRIORITY**
+- ❌ `user_model.dart`: 34.1% (15/44) - **HIGH PRIORITY**
+- ❌ `auth_exceptions.dart`: 43.8% (7/16) - **HIGH PRIORITY**
 
 **Assessment:** ❌ **Critical** - These areas need immediate attention.
 
@@ -416,7 +421,34 @@ features/visits/
 - Test all methods delegate correctly
 - Test error handling
 
-#### High Priority: UserModel (36.4%)
+#### Critical: GoldfishException (14.3%)
+
+**Issue:** Very low test coverage for the base exception class.
+
+**Impact:**
+- Base exception functionality may not be properly tested
+- Exception handling infrastructure could have issues
+
+**Recommendation:**
+- Add tests for exception creation and message handling
+- Test exception type hierarchy
+- Verify exception properties are correctly set
+
+#### High Priority: UserRepository (58.3%)
+
+**Issue:** Coverage improved from 43.9% to 58.3%, but still missing tests for:
+- Error handling paths
+- Edge cases in user operations
+
+**Impact:**
+- User data operations could fail in edge cases
+- Authentication flow depends on this
+
+**Recommendation:**
+- Continue adding tests for error handling paths
+- Test edge cases with fake Firestore
+
+#### High Priority: UserModel (34.1%)
 
 **Issue:** Low coverage for user model, likely missing tests for:
 - `fromMap` factory
@@ -432,22 +464,21 @@ features/visits/
 - Test serialization/deserialization round-trips
 - Test edge cases (null values, missing fields)
 
-#### High Priority: UserRepository (43.9%)
+#### High Priority: AuthExceptions (43.8%)
 
-**Issue:** Missing tests for:
-- `createUser`
-- `updateUser`
-- `getUser` error cases
-- `createOrUpdateUser` logic
+**Issue:** Low coverage for authentication exception classes, missing tests for:
+- Exception message formatting
+- Exception type hierarchy
+- Error handling scenarios
 
 **Impact:**
-- User data operations could fail
-- Authentication flow depends on this
+- Error messages may not be properly formatted
+- Exception handling in auth flow may be incomplete
 
 **Recommendation:**
-- Add tests for all CRUD operations
-- Test error handling
-- Test with fake Firestore
+- Add tests for all exception types
+- Test exception message generation
+- Test exception handling in auth service
 
 ### 5.4 Test Quality
 
@@ -466,9 +497,11 @@ features/visits/
 ### 6.1 High Priority
 
 1. **Improve Test Coverage for Critical Components**
-   - Add tests for `GeolocatorPackageWrapper` (target: 80%+)
-   - Add tests for `UserModel` serialization (target: 80%+)
-   - Add tests for `UserRepository` CRUD operations (target: 80%+)
+   - Add tests for `GeolocatorPackageWrapper` (target: 80%+) - **CRITICAL: Currently 7.7%**
+   - Add tests for `UserModel` serialization (target: 80%+) - Currently 34.1%
+   - Add tests for `GoldfishException` base class (target: 80%+) - Currently 14.3%
+   - Add tests for `AuthExceptions` (target: 80%+) - Currently 43.8%
+   - Continue improving `UserRepository` coverage (target: 80%+) - Currently 58.3% (improved from 43.9%)
 
 2. **Reduce Tight Coupling**
    - Create a dependency injection container or factory
@@ -514,8 +547,9 @@ The Goldfish codebase demonstrates **strong software engineering practices** wit
 **Key Strengths:**
 - Excellent use of abstract interfaces and dependency injection
 - Clear feature boundaries with low inter-feature coupling
-- Good overall test coverage (77.3%)
+- Good overall test coverage (76.2%)
 - Robust error handling
+- Significant improvement in `auth_notifier.dart` coverage (96.7%)
 
 **Key Areas for Improvement:**
 - Reduce tight coupling to Firebase and package singletons
@@ -533,28 +567,29 @@ The Goldfish codebase demonstrates **strong software engineering practices** wit
 | File | Coverage | Lines Hit/Total | Priority |
 |------|----------|-----------------|----------|
 | `geolocator_wrapper.dart` | 7.7% | 1/13 | 🔴 Critical |
-| `user_model.dart` | 36.4% | 16/44 | 🟠 High |
-| `user_repository.dart` | 43.9% | 18/41 | 🟠 High |
-| `auth_exceptions.dart` | 54.5% | 6/11 | 🟡 Medium |
+| `goldfish_exception.dart` | 14.3% | 1/7 | 🟠 High |
+| `user_model.dart` | 34.1% | 15/44 | 🟠 High |
+| `auth_exceptions.dart` | 43.8% | 7/16 | 🟠 High |
+| `visit_exceptions.dart` | 50.0% | 2/4 | 🟡 Medium |
 | `app_logger.dart` | 55.6% | 10/18 | 🟡 Medium |
+| `user_repository.dart` | 58.3% | 21/36 | 🟡 Medium |
 | `app_theme.dart` | 62.1% | 18/29 | 🟡 Medium |
-| `location_service.dart` | 71.0% | 49/69 | 🟢 Good |
-| `record_visit_view_model.dart` | 70.1% | 110/157 | 🟢 Good |
-| `auth_service.dart` | 72.3% | 34/47 | 🟢 Good |
+| `auth_service.dart` | 70.4% | 38/54 | 🟢 Good |
+| `location_service.dart` | 71.7% | 43/60 | 🟢 Good |
+| `record_visit_view_model.dart` | 72.8% | 110/151 | 🟢 Good |
 | `visit_model.dart` | 73.0% | 119/163 | 🟢 Good |
-| `auth_notifier.dart` | 78.9% | 30/38 | 🟢 Good |
-| `home_screen.dart` | 80.2% | 235/293 | 🟢 Good |
-| `visit_repository.dart` | 81.1% | 43/53 | 🟢 Good |
+| `overpass_client.dart` | 75.0% | 27/36 | 🟢 Good |
+| `home_screen.dart` | 75.0% | 213/284 | 🟢 Good |
+| `sign_in_screen.dart` | 80.9% | 55/68 | 🟢 Good |
+| `visit_repository.dart` | 83.3% | 40/48 | 🟢 Good |
 | `place_suggestion_model.dart` | 84.3% | 70/83 | 🟢 Excellent |
-| `overpass_client.dart` | 85.4% | 35/41 | 🟢 Excellent |
 | `map_marker.dart` | 85.7% | 24/28 | 🟢 Excellent |
 | `place_suggestions_list.dart` | 87.3% | 131/150 | 🟢 Excellent |
-| `sign_in_screen.dart` | 92.0% | 46/50 | 🟢 Excellent |
-| `map_view_widget.dart` | 93.0% | 120/129 | 🟢 Excellent |
+| `map_view_widget.dart` | 94.4% | 117/124 | 🟢 Excellent |
+| `auth_notifier.dart` | 96.7% | 29/30 | 🟢 Excellent |
 | `http_client.dart` | 100.0% | 3/3 | 🟢 Excellent |
-| `visit_marker.dart` | 100.0% | 31/31 | 🟢 Excellent |
-| `visit_exceptions.dart` | 100.0% | 3/3 | 🟢 Excellent |
 | `google_sign_in_button.dart` | 100.0% | 13/13 | 🟢 Excellent |
+| `visit_marker.dart` | 100.0% | 31/31 | 🟢 Excellent |
 
-**Overall: 77.3% (1181/1528)** ✅
+**Overall: 76.2% (1154/1514)** ✅
 

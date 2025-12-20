@@ -7,7 +7,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:goldfish/core/auth/auth_notifier.dart';
-import 'package:goldfish/core/data/models/visit_model.dart';
 import 'package:goldfish/core/data/repositories/visit_repository.dart';
 import 'package:goldfish/core/location/location_service.dart';
 import 'package:goldfish/features/home/presentation/screens/home_screen.dart';
@@ -53,7 +52,7 @@ void main() {
           routes: [
             GoRoute(
               path: '/',
-                builder: (context, state) => HomeScreen(
+              builder: (context, state) => HomeScreen(
                 authNotifier: fakeAuthNotifier,
                 visitRepository: visitRepository,
                 locationService: locationService ?? fakeLocationService,
@@ -778,14 +777,14 @@ void main() {
       (tester) async {
         // Arrange
         final now = DateTime.now();
-      await fakeFirestore.collection('visits').doc('visit1').set({
-        'user_id': 'user123',
-        'place_name': 'Test Place',
-        'gps_known': {'lat': 51.5074, 'long': -0.1278},
-        'added_at': Timestamp.fromDate(now),
-        'created_at': Timestamp.fromDate(now),
-        'updated_at': Timestamp.fromDate(now),
-      });
+        await fakeFirestore.collection('visits').doc('visit1').set({
+          'user_id': 'user123',
+          'place_name': 'Test Place',
+          'gps_known': {'lat': 51.5074, 'long': -0.1278},
+          'added_at': Timestamp.fromDate(now),
+          'created_at': Timestamp.fromDate(now),
+          'updated_at': Timestamp.fromDate(now),
+        });
         fakeLocationService.onIsLocationServiceEnabled = () async => true;
         fakeLocationService.onHasPermission = () async => true;
         fakeLocationService.onGetCurrentLocation = () async => null;
