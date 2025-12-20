@@ -7,7 +7,7 @@ import 'package:goldfish/core/data/repositories/visit_repository.dart';
 import 'package:goldfish/core/location/location_service.dart';
 import 'package:goldfish/features/auth/presentation/screens/sign_in_screen.dart';
 import 'package:goldfish/features/home/presentation/screens/home_screen.dart';
-import 'package:goldfish/features/visits/domain/view_models/record_visit_view_model.dart';
+import 'package:goldfish/features/visits/domain/view_models/record_visit_view_model_factory.dart';
 import 'package:goldfish/features/visits/presentation/screens/record_visit_screen.dart';
 
 /// Configuration for app navigation with authentication guards.
@@ -62,8 +62,8 @@ class AppRouter {
         path: '/record-visit',
         name: 'record-visit',
         builder: (context, state) {
-          // Create ViewModel with all required dependencies injected from main.dart
-          final viewModel = RecordVisitViewModel(
+          // Create ViewModel using factory function with dependencies injected from main.dart
+          final viewModel = createRecordVisitViewModel(
             locationService: _locationService,
             overpassClient: _overpassClient,
             visitRepository: _visitRepository,

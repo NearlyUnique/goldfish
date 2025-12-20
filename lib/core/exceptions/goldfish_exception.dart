@@ -17,6 +17,6 @@ abstract class GoldfishException implements Exception {
     if (innerError == null) {
       return toString();
     }
-    return '$toString() : $innerError.toString()';
+    return '${toString()} : ${innerError.toString()}';
   }
 }
