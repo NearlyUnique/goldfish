@@ -6,7 +6,7 @@ void main() {
   group('GoldfishException', () {
     test('toString returns eventName', () {
       // Arrange
-      final exception = _TestGoldfishException('test_event', null);
+      const exception = _TestGoldfishException('test_event', null);
 
       // Act
       final result = exception.toString();
@@ -17,7 +17,7 @@ void main() {
 
     test('displayMessage returns eventName when innerError is null', () {
       // Arrange
-      final exception = _TestGoldfishException('test_event', null);
+      const exception = _TestGoldfishException('test_event', null);
 
       // Act
       final result = exception.displayMessage;
@@ -43,7 +43,7 @@ void main() {
     test('displayMessage handles string innerError', () {
       // Arrange
       const innerError = 'string error';
-      final exception = _TestGoldfishException('test_event', innerError);
+      const exception = _TestGoldfishException('test_event', innerError);
 
       // Act
       final result = exception.displayMessage;
@@ -68,7 +68,7 @@ void main() {
 
     test('eventName is accessible', () {
       // Arrange
-      final exception = _TestGoldfishException('my_event', null);
+      const exception = _TestGoldfishException('my_event', null);
 
       // Assert
       expect(exception.eventName, equals('my_event'));
@@ -85,7 +85,7 @@ void main() {
 
     test('innerError can be null', () {
       // Arrange
-      final exception = _TestGoldfishException('event', null);
+      const exception = _TestGoldfishException('event', null);
 
       // Assert
       expect(exception.innerError, isNull);
