@@ -107,6 +107,7 @@ const stats = {
     errors: 0,
     geocoded: 0,
     geocodingErrors: 0,
+    migrations: {},
 };
 
 // Rate limiting for Nominatim (1 request per second)
@@ -265,6 +266,30 @@ function docToJson(doc) {
 }
 
 /**
+ * Convert updates object to JSON-safe format for dry run output
+ * Handles Firestore FieldValue objects (e.g., FieldValue.delete())
+ */
+function updatesToJson(updates) {
+    const json = {};
+    for (const [key, value] of Object.entries(updates)) {
+        if (value && typeof value === 'object' && value.constructor && value.constructor.name === 'FieldValue') {
+            // FieldValue.delete() or other FieldValue operations
+            if (value._methodName === 'delete') {
+                json[key] = '<DELETE>';
+            } else {
+                json[key] = `<FieldValue.${value._methodName || 'unknown'}>`;
+            }
+        } else if (value && typeof value.toDate === 'function') {
+            // Firestore Timestamp
+            json[key] = value.toDate().toISOString();
+        } else {
+            json[key] = value;
+        }
+    }
+    return json;
+}
+
+/**
  * Validate document structure before migration
  */
 function validateDocument(doc) {
@@ -304,12 +329,176 @@ function validateDocument(doc) {
 }
 
 /**
+ * Migration function: Remove added_at field
+ * Removes the redundant added_at field (redundant with created_at)
+ */
+async function migrationRemoveAddedAt(doc, stats, updates) {
+    const data = doc.data();
+    if (!('added_at' in data)) {
+        return false;
+    }
+    updates['added_at'] = admin.firestore.FieldValue.delete();
+    if (!stats.migrations.removeAddedAt) {
+        stats.migrations.removeAddedAt = 0;
+    }
+    stats.migrations.removeAddedAt++;
+    return true;
+}
+
+/**
+ * Migration function: Add visited_at field
+ * Adds visited_at field using created_at value for existing visits
+ */
+async function migrationAddVisitedAt(doc, stats, updates) {
+    const data = doc.data();
+    if ('visited_at' in data) {
+        return false;
+    }
+    if (!data.created_at) {
+        console.warn(`  Warning: Document ${doc.id} has no created_at field`);
+        stats.errors++;
+        return false;
+    }
+    updates['visited_at'] = data.created_at;
+    if (!stats.migrations.addVisitedAt) {
+        stats.migrations.addVisitedAt = 0;
+    }
+    stats.migrations.addVisitedAt++;
+    return true;
+}
+
+/**
+ * Migration function: Add planned field
+ * Adds planned field as false for all existing visits
+ */
+async function migrationAddPlanned(doc, stats, updates) {
+    const data = doc.data();
+    if ('planned' in data) {
+        return false;
+    }
+    updates['planned'] = false;
+    if (!stats.migrations.addPlanned) {
+        stats.migrations.addPlanned = 0;
+    }
+    stats.migrations.addPlanned++;
+    return true;
+}
+
+/**
+ * Get GPS coordinates from document, preferring gps_known over gps_recorded
+ */
+function getGpsCoordinates(data) {
+    let lat = null;
+    let lon = null;
+
+    if (data.gps_known) {
+        lat = getLatitude(data.gps_known);
+        lon = getLongitude(data.gps_known);
+    } else if (data.gps_recorded) {
+        lat = getLatitude(data.gps_recorded);
+        lon = getLongitude(data.gps_recorded);
+    }
+
+    return { lat, lon };
+}
+
+/**
+ * Migration function: Add missing address components
+ * Adds missing county/region, country, and country_code to addresses using reverse geocoding
+ */
+async function migrationAddAddressComponents(doc, stats, updates) {
+    const data = doc.data();
+    if (!data.place_address || typeof data.place_address !== 'object') {
+        return false;
+    }
+
+    const address = data.place_address;
+    const addressUpdates = {};
+    let addressNeedsUpdate = false;
+
+    // Determine what's missing
+    const needsCounty = !address.county && !address.region;
+    const needsCountry = !address.country;
+    const needsCountryCode = !address.country_code;
+
+    // Only proceed if something is missing
+    if (!needsCounty && !needsCountry && !needsCountryCode) {
+        return false;
+    }
+
+    // Get coordinates for reverse geocoding
+    const { lat, lon } = getGpsCoordinates(data);
+
+    if (lat === null || lon === null) {
+        return false;
+    }
+
+    // Validate coordinates are reasonable
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+        console.warn(`  Warning: Invalid coordinates for document ${doc.id}: lat=${lat}, lon=${lon}`);
+        return false;
+    }
+
+    try {
+        const geocodeResult = await reverseGeocode(lat, lon);
+        if (!geocodeResult || typeof geocodeResult !== 'object') {
+            throw new Error('Invalid geocoding response format');
+        }
+        const components = extractAddressComponents(geocodeResult);
+
+        if (needsCounty && components.county) {
+            addressUpdates['county'] = components.county;
+            addressNeedsUpdate = true;
+        }
+
+        if (needsCountry && components.country) {
+            addressUpdates['country'] = components.country;
+            addressNeedsUpdate = true;
+        }
+
+        if (needsCountryCode && components.countryCode) {
+            addressUpdates['country_code'] = components.countryCode;
+            addressNeedsUpdate = true;
+        }
+
+        if (addressNeedsUpdate) {
+            // Merge address updates with existing address
+            updates['place_address'] = {
+                ...address,
+                ...addressUpdates,
+            };
+            stats.geocoded++;
+            if (!stats.migrations) stats.migrations = {};
+            if (!stats.migrations.addAddressComponents) stats.migrations.addAddressComponents = 0;
+            stats.migrations.addAddressComponents++;
+            return true;
+        }
+    } catch (error) {
+        console.warn(`  Warning: Failed to geocode document ${doc.id}: ${error.message}`);
+        stats.geocodingErrors++;
+        return false;
+    }
+
+    return false;
+}
+
+/**
+ * List of migration functions to apply to each document
+ * Each function performs a single logical migration
+ */
+const migrationFunctions = [
+    migrationRemoveAddedAt,
+    migrationAddVisitedAt,
+    migrationAddPlanned,
+    migrationAddAddressComponents,
+];
+
+/**
  * Migrate a single visit document
+ * Iterates over migration functions and applies them sequentially
  */
 async function migrateVisit(doc) {
-    const data = doc.data();
     const updates = {};
-    let needsUpdate = false;
 
     // Validate document structure
     const validationErrors = validateDocument(doc);
@@ -319,195 +508,38 @@ async function migrateVisit(doc) {
         return false;
     }
 
-    // Check if document has added_at field (needs removal)
-    if ('added_at' in data) {
-        updates['added_at'] = admin.firestore.FieldValue.delete();
-        needsUpdate = true;
-    }
-
-    // Check if document is missing visited_at field
-    if (!('visited_at' in data)) {
-        // Use created_at value for visited_at
-        if (data.created_at) {
-            updates['visited_at'] = data.created_at;
-            needsUpdate = true;
-        } else {
-            console.warn(`  Warning: Document ${doc.id} has no created_at field`);
+    // Apply each migration function
+    for (const migrationFn of migrationFunctions) {
+        try {
+            await migrationFn(doc, stats, updates);
+        } catch (error) {
+            console.error(`  Error in migration for document ${doc.id}:`, error.message);
             stats.errors++;
             return false;
         }
     }
 
-    // Check if document is missing planned field
-    if (!('planned' in data)) {
-        updates['planned'] = false;
-        needsUpdate = true;
-    }
-
-    // Check if address needs county/region, country, or country code
-    if (data.place_address && typeof data.place_address === 'object') {
-        const address = data.place_address;
-        const addressUpdates = {};
-        let addressNeedsUpdate = false;
-
-        // Check if county/region is missing
-        if (!address.county && !address.region) {
-            // Try to get coordinates for reverse geocoding
-            let lat = null;
-            let lon = null;
-
-            // Prefer gps_known over gps_recorded
-            if (data.gps_known) {
-                lat = getLatitude(data.gps_known);
-                lon = getLongitude(data.gps_known);
-            } else if (data.gps_recorded) {
-                lat = getLatitude(data.gps_recorded);
-                lon = getLongitude(data.gps_recorded);
-            }
-
-            if (lat !== null && lon !== null) {
-                // Validate coordinates are reasonable
-                if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-                    console.warn(`  Warning: Invalid coordinates for document ${doc.id}: lat=${lat}, lon=${lon}`);
-                } else {
-                    try {
-                        const geocodeResult = await reverseGeocode(lat, lon);
-                        if (!geocodeResult || typeof geocodeResult !== 'object') {
-                            throw new Error('Invalid geocoding response format');
-                        }
-                        const components = extractAddressComponents(geocodeResult);
-
-                        if (components.county && !address.county && !address.region) {
-                            addressUpdates['county'] = components.county;
-                            addressNeedsUpdate = true;
-                        }
-
-                        if (components.country && !address.country) {
-                            addressUpdates['country'] = components.country;
-                            addressNeedsUpdate = true;
-                        }
-
-                        if (components.countryCode && !address.country_code) {
-                            addressUpdates['country_code'] = components.countryCode;
-                            addressNeedsUpdate = true;
-                        }
-
-                        if (addressNeedsUpdate) {
-                            stats.geocoded++;
-                        }
-                    } catch (error) {
-                        console.warn(`  Warning: Failed to geocode document ${doc.id}: ${error.message}`);
-                        stats.geocodingErrors++;
-                    }
-                }
-            }
-        } else if (!address.country) {
-            // County exists but country is missing
-            let lat = null;
-            let lon = null;
-
-            if (data.gps_known) {
-                lat = getLatitude(data.gps_known);
-                lon = getLongitude(data.gps_known);
-            } else if (data.gps_recorded) {
-                lat = getLatitude(data.gps_recorded);
-                lon = getLongitude(data.gps_recorded);
-            }
-
-            if (lat !== null && lon !== null) {
-                // Validate coordinates are reasonable
-                if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-                    console.warn(`  Warning: Invalid coordinates for document ${doc.id}: lat=${lat}, lon=${lon}`);
-                } else {
-                    try {
-                        const geocodeResult = await reverseGeocode(lat, lon);
-                        if (!geocodeResult || typeof geocodeResult !== 'object') {
-                            throw new Error('Invalid geocoding response format');
-                        }
-                        const components = extractAddressComponents(geocodeResult);
-
-                        if (components.country && !address.country) {
-                            addressUpdates['country'] = components.country;
-                            addressNeedsUpdate = true;
-                        }
-
-                        if (components.countryCode && !address.country_code) {
-                            addressUpdates['country_code'] = components.countryCode;
-                            addressNeedsUpdate = true;
-                        }
-
-                        if (addressNeedsUpdate) {
-                            stats.geocoded++;
-                        }
-                    } catch (error) {
-                        console.warn(`  Warning: Failed to geocode document ${doc.id}: ${error.message}`);
-                        stats.geocodingErrors++;
-                    }
-                }
-            }
-        } else if (!address.country_code) {
-            // County and country exist but country code is missing
-            let lat = null;
-            let lon = null;
-
-            if (data.gps_known) {
-                lat = getLatitude(data.gps_known);
-                lon = getLongitude(data.gps_known);
-            } else if (data.gps_recorded) {
-                lat = getLatitude(data.gps_recorded);
-                lon = getLongitude(data.gps_recorded);
-            }
-
-            if (lat !== null && lon !== null) {
-                // Validate coordinates are reasonable
-                if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-                    console.warn(`  Warning: Invalid coordinates for document ${doc.id}: lat=${lat}, lon=${lon}`);
-                } else {
-                    try {
-                        const geocodeResult = await reverseGeocode(lat, lon);
-                        if (!geocodeResult || typeof geocodeResult !== 'object') {
-                            throw new Error('Invalid geocoding response format');
-                        }
-                        const components = extractAddressComponents(geocodeResult);
-
-                        if (components.countryCode) {
-                            addressUpdates['country_code'] = components.countryCode;
-                            addressNeedsUpdate = true;
-                            stats.geocoded++;
-                        }
-                    } catch (error) {
-                        console.warn(`  Warning: Failed to geocode document ${doc.id}: ${error.message}`);
-                        stats.geocodingErrors++;
-                    }
-                }
-            }
-        }
-
-        if (addressNeedsUpdate) {
-            // Merge address updates with existing address
-            updates['place_address'] = {
-                ...address,
-                ...addressUpdates,
-            };
-            needsUpdate = true;
-        }
-    }
-
-    if (needsUpdate) {
+    // Apply updates if any were made
+    if (Object.keys(updates).length > 0) {
         try {
             if (!options.dryRun) {
                 await doc.ref.update(updates);
+            } else {
+                // In dry run mode, print updates to console
+                const updatesJson = updatesToJson(updates);
+                console.log(`  [DRY RUN] Would update document ${doc.id}:`, JSON.stringify(updatesJson, null, 2));
             }
             stats.updated++;
             return true;
         } catch (error) {
             console.error(`  Error updating document ${doc.id}:`, error.message);
             stats.errors++;
+            return false;
         }
     } else {
         stats.skipped++;
+        return false;
     }
-    return false;
 }
 
 /**
@@ -590,6 +622,22 @@ async function migrateVisits() {
         console.log(`  Errors: ${stats.errors}`);
         console.log(`  Addresses geocoded: ${stats.geocoded}`);
         console.log(`  Geocoding errors: ${stats.geocodingErrors}`);
+
+        if (stats.migrations) {
+            console.log('  Migration types applied:');
+            if (stats.migrations.removeAddedAt) {
+                console.log(`    - Removed added_at: ${stats.migrations.removeAddedAt}`);
+            }
+            if (stats.migrations.addVisitedAt) {
+                console.log(`    - Added visited_at: ${stats.migrations.addVisitedAt}`);
+            }
+            if (stats.migrations.addPlanned) {
+                console.log(`    - Added planned: ${stats.migrations.addPlanned}`);
+            }
+            if (stats.migrations.addAddressComponents) {
+                console.log(`    - Added address components: ${stats.migrations.addAddressComponents}`);
+            }
+        }
 
         if (options.dryRun) {
             console.log('');
