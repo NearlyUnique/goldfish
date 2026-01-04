@@ -2,6 +2,19 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Run Migrate",
+            "program": "${workspaceFolder}/scripts/migrate_visits.js",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node",
+            "cwd": "${workspaceFolder}/scripts",
+            "args": [
+                "--key=../.secrets/goldfish-admin.json"
+            ]
+        },
+        {
             "name": "Goldfish (Debug)",
             "request": "launch",
             "type": "dart",
