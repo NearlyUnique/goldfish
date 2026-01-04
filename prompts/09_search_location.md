@@ -34,7 +34,7 @@ See `scripts/migrate_visits.js` for the migration script and instructions on how
    - User may set as visit as "Planned" instead of setting a visited date, default is to have "planned" disabled
    - record `planned` as an explicit Boolean field
    - This enables recording historical and planned visits
-4. **Full Address Usage**: Use the complete address returned by Overpass API when saving, including county/region and country when available
+4. **Full Address Usage**: Use the complete address returned by Overpass API when saving, including county/region, country, and country code when available
 5. **New Model Field**: Add `visitedAt` attribute to Visit model to store when the visit actually occurred
 
 ## Implementation Plan
@@ -52,11 +52,11 @@ See `scripts/migrate_visits.js` for the migration script and instructions on how
 1. Remove `added_at` field from all visit documents
 2. Add `visited_at` field using `created_at` value for existing visits
 3. Add `planned` field as `false` for all existing visits
-4. **Add county/region and country to addresses**:
-   - For visits with `place_address` but missing `county` or `country`:
+4. **Add county/region, country, and country code to addresses**:
+   - For visits with `place_address` but missing `county`, `country`, or `country_code`:
      - Use reverse geocoding (Nominatim API) to look up address components
      - Use coordinates from `gps_known` (preferred) or `gps_recorded`
-     - Extract county/region and country from geocoding response
+     - Extract county/region, country, and country code (ISO 3166-1 alpha-2) from geocoding response
      - Update address fields with missing data
 
 **Security Setup**:
@@ -93,10 +93,10 @@ The migration script requires Firebase Admin SDK which bypasses Firestore securi
 - Dry-run mode to preview changes without applying
 - Error handling and logging
 - Confirmation prompt before making changes
-- **Reverse geocoding** using Nominatim API to fill missing county/region and country:
+- **Reverse geocoding** using Nominatim API to fill missing county/region, country, and country code:
   - Uses `gps_known` coordinates (preferred) or `gps_recorded`
   - Rate limiting to respect Nominatim usage policy (1 request per second)
-  - Extracts county/region and country from geocoding response
+  - Extracts county/region, country, and country code (ISO 3166-1 alpha-2) from geocoding response
   - Only updates addresses that are missing these fields
 
 **Deliverables**:
@@ -128,6 +128,7 @@ The migration script requires Firebase Admin SDK which bypasses Firestore securi
 4. **Update Address class** to include:
    - `county` field (optional String) - county/region/state
    - `country` field (optional String) - country name
+   - `countryCode` field (optional String) - ISO 3166-1 alpha-2 country code (e.g., "GB", "US")
    - Update `fromMap`, `toMap`, `copyWith`, equality, and hashCode
 5. Update `fromFirestore` factory:
    - Remove `added_at` field reading
@@ -136,16 +137,16 @@ The migration script requires Firebase Admin SDK which bypasses Firestore securi
      - If field exists: read value (could be null for planned visits)
      - If field doesn't exist: set to null (old visit, will be treated as `createdAt` in business logic)
    - Read `planned` field (default to false if missing)
-   - Update address parsing to include `county` and `country`
+   - Update address parsing to include `county`, `country`, and `country_code`
 6. Update `fromMap` factory similarly
 7. Update `toMap` method:
    - Remove `added_at` field
    - Include `visited_at` (always include, even if null for new visits)
    - Include `planned` field (always include)
-   - Include `county` and `country` in address
+   - Include `county`, `country`, and `country_code` in address
 8. Update `copyWith` method to remove `addedAt` and add `visitedAt` and `planned`
 9. Update equality operator and hashCode to remove `addedAt` and add `visitedAt` and `planned`
-10. Update `toFormattedString` to include county and country
+10. Update `toFormattedString` to include county, country, and country code
 
 **Considerations**:
 - `visitedAt` should be optional (nullable) to maintain backward compatibility
@@ -161,6 +162,7 @@ The migration script requires Firebase Admin SDK which bypasses Firestore securi
 - **Address model changes**:
   - `county` field (optional) - stores county/region/state
   - `country` field (optional) - stores country name
+  - `countryCode` field (optional) - stores ISO 3166-1 alpha-2 country code (e.g., "GB", "US")
   - These fields will be populated from Overpass API when available, or via reverse geocoding during migration
 
 **Deliverables**:
@@ -353,7 +355,7 @@ out center tags;
      - If `_visitedAt` is null and not planned: default to `DateTime.now()` (GPS location mode)
    - Keep `createdAt`, `updatedAt` as current time (when record is added)
    - When search result is selected, ensure full address from Overpass is used
-   - Update `_parseAddress` method to extract `addr:county`/`addr:state` and `addr:country` from Overpass tags when available
+   - Update `_parseAddress` method to extract `addr:county`/`addr:state`, `addr:country`, and `addr:country_code` from Overpass tags when available
 2. Update `canSave` getter if needed:
    - Ensure place name is required
    - Location may not be required when using search mode

@@ -7,7 +7,7 @@
  * 1. Removes the `added_at` field (redundant with `created_at`)
  * 2. Adds `visited_at` field using `created_at` value for existing visits
  * 3. Adds `planned` field as `false` for all existing visits
- * 4. Adds missing `county`/`region` and `country` to addresses using reverse geocoding
+ * 4. Adds missing `county`/`region`, `country`, and `country_code` to addresses using reverse geocoding
  *
  * Usage:
  *   node scripts/migrate_visits.js [--key=path/to/service-account-key.json] [--apply] [--batch-size=500]
@@ -192,13 +192,14 @@ function getLongitude(gps) {
 }
 
 /**
- * Extract county/region and country from Nominatim response
+ * Extract county/region, country, and country code from Nominatim response
  */
 function extractAddressComponents(geocodeResult) {
     const address = geocodeResult.address || {};
     const components = {
         county: null,
         country: null,
+        countryCode: null,
     };
 
     // Try various fields for county/region/state
@@ -211,6 +212,10 @@ function extractAddressComponents(geocodeResult) {
 
     // Country is usually in 'country' field
     components.country = address.country || null;
+
+    // Country code is usually in 'country_code' field (ISO 3166-1 alpha-2)
+    // Nominatim returns it in lowercase, but we'll store it as-is
+    components.countryCode = address.country_code || null;
 
     return components;
 }
@@ -339,7 +344,7 @@ async function migrateVisit(doc) {
         needsUpdate = true;
     }
 
-    // Check if address needs county/region or country
+    // Check if address needs county/region, country, or country code
     if (data.place_address && typeof data.place_address === 'object') {
         const address = data.place_address;
         const addressUpdates = {};
@@ -382,6 +387,11 @@ async function migrateVisit(doc) {
                             addressNeedsUpdate = true;
                         }
 
+                        if (components.countryCode && !address.country_code) {
+                            addressUpdates['country_code'] = components.countryCode;
+                            addressNeedsUpdate = true;
+                        }
+
                         if (addressNeedsUpdate) {
                             stats.geocoded++;
                         }
@@ -416,8 +426,52 @@ async function migrateVisit(doc) {
                         }
                         const components = extractAddressComponents(geocodeResult);
 
-                        if (components.country) {
+                        if (components.country && !address.country) {
                             addressUpdates['country'] = components.country;
+                            addressNeedsUpdate = true;
+                        }
+
+                        if (components.countryCode && !address.country_code) {
+                            addressUpdates['country_code'] = components.countryCode;
+                            addressNeedsUpdate = true;
+                        }
+
+                        if (addressNeedsUpdate) {
+                            stats.geocoded++;
+                        }
+                    } catch (error) {
+                        console.warn(`  Warning: Failed to geocode document ${doc.id}: ${error.message}`);
+                        stats.geocodingErrors++;
+                    }
+                }
+            }
+        } else if (!address.country_code) {
+            // County and country exist but country code is missing
+            let lat = null;
+            let lon = null;
+
+            if (data.gps_known) {
+                lat = getLatitude(data.gps_known);
+                lon = getLongitude(data.gps_known);
+            } else if (data.gps_recorded) {
+                lat = getLatitude(data.gps_recorded);
+                lon = getLongitude(data.gps_recorded);
+            }
+
+            if (lat !== null && lon !== null) {
+                // Validate coordinates are reasonable
+                if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+                    console.warn(`  Warning: Invalid coordinates for document ${doc.id}: lat=${lat}, lon=${lon}`);
+                } else {
+                    try {
+                        const geocodeResult = await reverseGeocode(lat, lon);
+                        if (!geocodeResult || typeof geocodeResult !== 'object') {
+                            throw new Error('Invalid geocoding response format');
+                        }
+                        const components = extractAddressComponents(geocodeResult);
+
+                        if (components.countryCode) {
+                            addressUpdates['country_code'] = components.countryCode;
                             addressNeedsUpdate = true;
                             stats.geocoded++;
                         }
