@@ -335,14 +335,13 @@ function validateDocument(doc) {
 async function migrationRemoveAddedAt(doc, stats, updates) {
     const data = doc.data();
     if (!('added_at' in data)) {
-        return false;
+        return;
     }
     updates['added_at'] = admin.firestore.FieldValue.delete();
     if (!stats.migrations.removeAddedAt) {
         stats.migrations.removeAddedAt = 0;
     }
     stats.migrations.removeAddedAt++;
-    return true;
 }
 
 /**
@@ -352,19 +351,18 @@ async function migrationRemoveAddedAt(doc, stats, updates) {
 async function migrationAddVisitedAt(doc, stats, updates) {
     const data = doc.data();
     if ('visited_at' in data) {
-        return false;
+        return;
     }
     if (!data.created_at) {
         console.warn(`  Warning: Document ${doc.id} has no created_at field`);
         stats.errors++;
-        return false;
+        return;
     }
     updates['visited_at'] = data.created_at;
     if (!stats.migrations.addVisitedAt) {
         stats.migrations.addVisitedAt = 0;
     }
     stats.migrations.addVisitedAt++;
-    return true;
 }
 
 /**
@@ -374,14 +372,13 @@ async function migrationAddVisitedAt(doc, stats, updates) {
 async function migrationAddPlanned(doc, stats, updates) {
     const data = doc.data();
     if ('planned' in data) {
-        return false;
+        return;
     }
     updates['planned'] = false;
     if (!stats.migrations.addPlanned) {
         stats.migrations.addPlanned = 0;
     }
     stats.migrations.addPlanned++;
-    return true;
 }
 
 /**
@@ -409,7 +406,7 @@ function getGpsCoordinates(data) {
 async function migrationAddAddressComponents(doc, stats, updates) {
     const data = doc.data();
     if (!data.place_address || typeof data.place_address !== 'object') {
-        return false;
+        return;
     }
 
     const address = data.place_address;
@@ -423,20 +420,20 @@ async function migrationAddAddressComponents(doc, stats, updates) {
 
     // Only proceed if something is missing
     if (!needsCounty && !needsCountry && !needsCountryCode) {
-        return false;
+        return;
     }
 
     // Get coordinates for reverse geocoding
     const { lat, lon } = getGpsCoordinates(data);
 
     if (lat === null || lon === null) {
-        return false;
+        return;
     }
 
     // Validate coordinates are reasonable
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
         console.warn(`  Warning: Invalid coordinates for document ${doc.id}: lat=${lat}, lon=${lon}`);
-        return false;
+        return;
     }
 
     try {
@@ -468,18 +465,15 @@ async function migrationAddAddressComponents(doc, stats, updates) {
                 ...addressUpdates,
             };
             stats.geocoded++;
-            if (!stats.migrations) stats.migrations = {};
-            if (!stats.migrations.addAddressComponents) stats.migrations.addAddressComponents = 0;
+            if (!stats.migrations.addAddressComponents) {
+                stats.migrations.addAddressComponents = 0;
+            }
             stats.migrations.addAddressComponents++;
-            return true;
         }
     } catch (error) {
         console.warn(`  Warning: Failed to geocode document ${doc.id}: ${error.message}`);
         stats.geocodingErrors++;
-        return false;
     }
-
-    return false;
 }
 
 /**
@@ -668,36 +662,10 @@ async function migrateVisits() {
     }
 }
 
-// Confirm before running (for --apply)
-async function confirm() {
-    if (options.dryRun) {
-        return true;
-    }
-
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-    });
-
-    return new Promise((resolve) => {
-        rl.question('This will modify Firestore documents. Continue? (yes/no): ', (answer) => {
-            rl.close();
-            resolve(answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y');
-        });
-    });
-}
-
 // Main execution
 (async () => {
     // Test connection before proceeding
     await testConnection();
-
-    const confirmed = await confirm();
-    if (!confirmed) {
-        console.log('Migration cancelled.');
-        process.exit(0);
-    }
-
     await migrateVisits();
     process.exit(0);
 })();
